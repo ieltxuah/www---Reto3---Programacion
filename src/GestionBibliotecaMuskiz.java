@@ -1,5 +1,7 @@
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
 
@@ -95,8 +97,88 @@ public class GestionBibliotecaMuskiz {
             // Evaluar opción
             switch (opcionAutor) {
                 case "1":
-                    System.out.println("Has elegido: Altas.");
-                    // Aquí iría la lógica para altas
+                System.out.println("Has elegido: Altas.");
+
+                Scanner sc = new Scanner(System.in);
+                String nombre, apellido;
+                
+                // Validar que el nombre no esté vacío ni sea numérico
+                do {
+                    System.out.print("Introduce el nombre del autor: ");
+                    nombre = sc.nextLine().trim();
+                
+                    if (nombre.isEmpty()) {
+                        System.out.println("El nombre no puede estar vacío.");
+                    } else if (nombre.matches("\\d+")) {
+                        System.out.println("El nombre no puede ser solo números.");
+                        nombre = ""; // Para repetir el ciclo
+                    }
+                
+                } while (nombre.isEmpty());
+                
+                // Validar que el apellido no esté vacío ni sea numérico
+                do {
+                    System.out.print("Introduce el apellido del autor: ");
+                    apellido = sc.nextLine().trim();
+                
+                    if (apellido.isEmpty()) {
+                        System.out.println("El apellido no puede estar vacío.");
+                    } else if (apellido.matches("\\d+")) {
+                        System.out.println("El apellido no puede ser solo números.");
+                        apellido = ""; // Para repetir el ciclo
+                    }
+                
+                } while (apellido.isEmpty());
+                
+                // Generar cod_autor aleatorio y comprobar que no exista
+                int codAutor;
+                boolean codUnico = false;
+                
+                String url = "jdbc:mysql://localhost:3306/www";
+                String usuario = "root";
+                String password = "";
+                
+                try (Connection conn = DriverManager.getConnection(url, usuario, password)) {
+                
+                    do {
+                        codAutor = (int)(Math.random() * 900) + 100;
+                
+                        // Verificar unicidad del cod_autor
+                        String checkSql = "SELECT COUNT(*) FROM autores WHERE cod_autor = ?";
+                        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                            checkStmt.setInt(1, codAutor);
+                            ResultSet rs = checkStmt.executeQuery();
+                            if (rs.next() && rs.getInt(1) == 0) {
+                                codUnico = true;
+                            }
+                        }
+                    } while (!codUnico);
+                
+                    int codPais = (int)(Math.random() * 3) + 1;
+                
+                    // Insertar el autor
+                    String sql = "INSERT INTO autores (cod_autor, nombre, apellido, cod_pais) VALUES (?, ?, ?, ?)";
+                    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                        stmt.setInt(1, codAutor);
+                        stmt.setString(2, nombre);
+                        stmt.setString(3, apellido);
+                        stmt.setInt(4, codPais);
+                
+                        int filasAfectadas = stmt.executeUpdate();
+                        if (filasAfectadas > 0) {
+                            System.out.println("Autor agregado correctamente con ID: " + codAutor);
+                        } else {
+                            System.out.println("Error al agregar autor.");
+                        }
+                    }
+                
+                } catch (SQLException e) {
+                    System.out.println("Error de conexión o SQL:");
+                    e.printStackTrace();
+                }
+                
+
+
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "2":
