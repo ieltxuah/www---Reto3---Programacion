@@ -228,7 +228,109 @@ public class GestionBibliotecaMuskiz {
             switch (opcionLibro) {
                 case "1":
                     System.out.println("Has elegido: Altas.");
-                    // Aquí iría la lógica para altas
+                    Scanner sc = new Scanner(System.in);
+                    String isbn, titulo;
+                    int nCopias = 0, valoracion = 0;
+                    
+                    // Validar ISBN: exactamente 13 dígitos numéricos
+                    do {
+                        System.out.print("Introduce el ISBN del libro (13 dígitos): ");
+                        isbn = sc.nextLine().trim();
+                        if (isbn.isEmpty()) {
+                            System.out.println("El ISBN no puede estar vacío.");
+                        } else if (!isbn.matches("\\d{13}")) {
+                            System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos sin guiones.");
+                            isbn = "";
+                        }
+                    } while (isbn.isEmpty());
+                    
+                    // Validar título: no vacío y no solo numérico
+                    do {
+                        System.out.print("Introduce el título del libro: ");
+                        titulo = sc.nextLine().trim();
+                        if (titulo.isEmpty()) {
+                            System.out.println("El título no puede estar vacío.");
+                        } else if (titulo.matches("\\d+")) {
+                            System.out.println("El título no puede ser solo números.");
+                            titulo = "";
+                        }
+                    } while (titulo.isEmpty());
+                    
+                    // Validar número de copias: numérico y positivo
+                    do {
+                        System.out.print("Introduce el número de copias: ");
+                        String entrada = sc.nextLine().trim();
+                        try {
+                            nCopias = Integer.parseInt(entrada);
+                            if (nCopias < 1) {
+                                System.out.println("Debe haber al menos una copia.");
+                                nCopias = 0;
+                            }
+                        } catch (NumberFormatException e) {
+                            System.out.println("Ingresa un número válido.");
+                        }
+                    } while (nCopias == 0);
+                    
+                    // Validar valoración: entre 1 y 5
+                    do {
+                        System.out.print("Introduce la valoración (1 a 5): ");
+                        String entrada = sc.nextLine().trim();
+                        try {
+                            valoracion = Integer.parseInt(entrada);
+                            if (valoracion < 1 || valoracion > 5) {
+                                System.out.println("La valoración debe estar entre 1 y 5.");
+                                valoracion = 0;
+                            }
+                        } catch (NumberFormatException e) {
+                            System.out.println("Ingresa un número válido.");
+                        }
+                    } while (valoracion == 0);
+                    
+                    // Generar cod_libro aleatorio único
+                    int codLibro;
+                    boolean codUnico = false;
+                    
+                    String url = "jdbc:mysql://localhost:3306/www";
+                    String usuario = "root";
+                    String password = "";
+                    
+                    try (Connection conn = DriverManager.getConnection(url, usuario, password)) {
+                    
+                        do {
+                            codLibro = (int)(Math.random() * 900) + 100;
+                    
+                            String checkSql = "SELECT COUNT(*) FROM libros WHERE cod_libro = ?";
+                            try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                                checkStmt.setInt(1, codLibro);
+                                ResultSet rs = checkStmt.executeQuery();
+                                if (rs.next() && rs.getInt(1) == 0) {
+                                    codUnico = true;
+                                }
+                            }
+                        } while (!codUnico);
+                    
+                        // Insertar libro
+                        String sql = "INSERT INTO libros (cod_libro, isbn, titulo, n_copias, valoracion) VALUES (?, ?, ?, ?, ?)";
+                        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                            stmt.setInt(1, codLibro);
+                            stmt.setString(2, isbn);
+                            stmt.setString(3, titulo);
+                            stmt.setInt(4, nCopias);
+                            stmt.setInt(5, valoracion);
+                    
+                            int filas = stmt.executeUpdate();
+                            if (filas > 0) {
+                                System.out.println("Libro agregado correctamente con código: " + codLibro);
+                            } else {
+                                System.out.println("Error al insertar el libro.");
+                            }
+                        }
+                    
+                    } catch (SQLException e) {
+                        System.out.println("Error de conexión o SQL:");
+                        e.printStackTrace();
+                    }
+                    
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "2":
