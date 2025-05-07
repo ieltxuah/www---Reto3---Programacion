@@ -185,7 +185,6 @@ public class GestionBibliotecaMuskiz {
 
                 case "2":
                     System.out.println("Has elegido: Bajas.");
-
                     // Aquí iría la lógica para bajas
                     System.out.print("Introduce el código del autor a eliminar: ");
                     String codAutorBaja = scanner.nextLine().trim();
