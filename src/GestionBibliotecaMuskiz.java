@@ -142,11 +142,7 @@ public class GestionBibliotecaMuskiz {
                     int codAutor;
                     boolean codUnico = false;
 
-                    String url = "jdbc:mysql://localhost:3306/www";
-                    String usuario = "www";
-                    String password = "www";
-
-                    try (Connection conn = DriverManager.getConnection(url, usuario, password)) {
+                    try (Connection conn = connectMySQL()) {
 
                         do {
                             codAutor = generarCodigo(99999);
@@ -190,8 +186,6 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Bajas.");
 
-                    Connection conn = connectMySQL();
-                    
                     // Aquí iría la lógica para bajas
                     System.out.print("Introduce el código del autor a eliminar: ");
                     String codAutorBaja = scanner.nextLine().trim();
@@ -314,11 +308,7 @@ public class GestionBibliotecaMuskiz {
                     int codLibro;
                     boolean codUnico = false;
 
-                    String url = "jdbc:mysql://localhost:3306/www";
-                    String usuario = "www";
-                    String password = "www";
-
-                    try (Connection conn = DriverManager.getConnection(url, usuario, password)) {
+                    try (Connection conn = connectMySQL()) {
 
                         do {
                             codLibro = generarCodigo(99999999);
