@@ -480,7 +480,7 @@ public class GestionBibliotecaMuskiz {
 
                 case "2":
                     System.out.println("Has elegido: Bajas.");
-                    
+
                     System.out.print("Introduce el ISBN del libro a eliminar: ");
                     String codLibroBaja = scanner.nextLine().trim();
                     // Validar que el código no esté vacío y sea numérico
@@ -497,7 +497,6 @@ public class GestionBibliotecaMuskiz {
                             System.out.println("Error al eliminar el libro.");
                         }
                     }
-                    
 
                     break; // Se queda en el submenú para seguir eligiendo
 
@@ -515,33 +514,33 @@ public class GestionBibliotecaMuskiz {
                         System.out.println("2. Filtrar por ISBN");
                         System.out.print("Elige una opción (1 o 2): ");
                         opcionConsulta = scanner.nextLine().trim();
-                    
+
                         if (!opcionConsulta.equals("1") && !opcionConsulta.equals("2")) {
                             System.out.println("Opción no válida. Por favor elige 1 o 2.");
                         }
                     } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2"));
-                    
+
                     // Leer opción usuario
                     switch (opcionConsulta) {
                         case "1":
-                        
+
                             // Consulta todos los libros
                             consultarLibros(connectMySQL(), 0);
-                        break;
+                            break;
                         case "2":
-                        String isbnBuscar;
-                        do {
-                            System.out.print("Introduce el ISBN a buscar (13 dígitos): ");
-                            isbnBuscar = scanner.nextLine().trim();
-                
-                            if (!isbnBuscar.matches("\\d{13}")) {
-                                System.out.println("ISBN no válido. Debe contener exactamente 13 dígitos.");
-                            }
-                        } while (!isbnBuscar.matches("\\d{13}"));
-                
-                        consultarLibroPorISBN(connectMySQL(), isbnBuscar);
-                        break;
-                    
+                            String isbnBuscar;
+                            do {
+                                System.out.print("Introduce el ISBN a buscar (13 dígitos): ");
+                                isbnBuscar = scanner.nextLine().trim();
+
+                                if (!isbnBuscar.matches("\\d{13}")) {
+                                    System.out.println("ISBN no válido. Debe contener exactamente 13 dígitos.");
+                                }
+                            } while (!isbnBuscar.matches("\\d{13}"));
+
+                            consultarLibroPorISBN(connectMySQL(), isbnBuscar);
+                            break;
+
                         default:
                             break;
                     }
@@ -621,17 +620,26 @@ public class GestionBibliotecaMuskiz {
 
     // Borrar autor (baja)
     public static boolean borrarAutor(Connection conn, String codAutorBaja) {
-        Statement st;
+        PreparedStatement pstmt = null;
         int borrados;
         String sql = "DELETE FROM autores WHERE cod_autor = ?";
         try {
-            st = conn.createStatement();
-            borrados = st.executeUpdate(sql);
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, codAutorBaja); // Set the value for the placeholder
+            borrados = pstmt.executeUpdate();
             return (borrados > 0);
         } catch (Exception e) {
-            System.out
-                    .println("Problema al borrar: " + "\n" + e.getMessage());
+            System.out.println("Problema al borrar: " + "\n" + e.getMessage());
             return false;
+        } finally {
+            // Close the PreparedStatement to free resources
+            if (pstmt != null) {
+                try {
+                    pstmt.close();
+                } catch (SQLException e) {
+                    System.out.println("Error closing PreparedStatement: " + e.getMessage());
+                }
+            }
         }
     }
 
@@ -647,7 +655,6 @@ public class GestionBibliotecaMuskiz {
             return false;
         }
     }
-    
 
     public static void consultarLibroPorISBN(Connection conn, String isbn) {
         String sql = "SELECT * FROM libros WHERE isbn = ?";
@@ -656,14 +663,14 @@ public class GestionBibliotecaMuskiz {
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 System.out.println("Código: " + rs.getInt("cod_libro") +
-                                ", ISBN: " + rs.getString("isbn") +
-                                ", Título: " + rs.getString("titulo") +
-                                ", Copias: " + rs.getInt("n_copias") +
-                                ", Valoración: " + rs.getInt("valoracion"));
+                        ", ISBN: " + rs.getString("isbn") +
+                        ", Título: " + rs.getString("titulo") +
+                        ", Copias: " + rs.getInt("n_copias") +
+                        ", Valoración: " + rs.getInt("valoracion"));
             }
         } catch (SQLException e) {
             System.out.println("Error al consultar por ISBN: " + e.getMessage());
         }
     }
-    
+
 }
