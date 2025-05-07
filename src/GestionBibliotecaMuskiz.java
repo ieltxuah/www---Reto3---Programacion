@@ -195,7 +195,7 @@ public class GestionBibliotecaMuskiz {
                         System.out.println("El código debe ser numérico.");
                     } else {
                         // Llamar a la función de baja
-                        boolean resultado = borrarUsuario(connectMySQL(), codAutorBaja);
+                        boolean resultado = borrarAutor(connectMySQL(), codAutorBaja);
                         if (resultado) {
                             System.out.println("Autor eliminado correctamente.");
                         } else {
@@ -435,7 +435,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Borrar usuario (baja)
-    public static boolean borrarUsuario(Connection conn, String codAutorBaja) {
+    public static boolean borrarAutor(Connection conn, String codAutorBaja) {
         Statement st;
         int borrados;
         String sql = "DELETE FROM autores WHERE cod_autor= " + codAutorBaja;
