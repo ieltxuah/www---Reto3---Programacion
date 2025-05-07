@@ -65,25 +65,153 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
-    public static Connection connectMySQL() {
-        String url = "jdbc:mysql://127.0.0.1:3306/www";
-        String user = "www";
-        String password = "www";
-        Connection conn = null;
-        try {
-            conn = DriverManager.getConnection(url, user, password);
-            System.out.println("Conexión exitosa a la base de datos.");
-        } catch (SQLException e) {
-            System.out.println(
-                    "Error al conectar a la base de datos, por favor crea un ticket con el error para solventar el problema: "
-                            + e.getMessage());
-        }
-        return conn;
-    }
+    /// SUBMENUS ///
+    // Submenú libros
+    public static void mostrarMenuLibros(Scanner scanner) {
+        boolean continuar = true; // Variable para controlar el bucle
+        while (continuar) {
+            System.out.println("\n--- Menú de Libros ---");
+            System.out.println("1. Altas.");
+            System.out.println("2. Bajas.");
+            System.out.println("3. Modificaciones.");
+            System.out.println("4. Consulta de datos.");
+            System.out.println("5. Regresar a menú principal.");
+            System.out.print("Seleccione una opción: ");
 
-    public static int generarCodigo(int num) {
-        int cod = (int) (Math.random() * num) + 1;
-        return cod;
+            // Leer opción usuario
+            String opcionLibro = scanner.nextLine();
+
+            // Evaluar opción
+            switch (opcionLibro) {
+                case "1":
+                    agregarLibro(scanner);
+                    break; // Se queda en el submenú para seguir eligiendo
+
+                case "2":
+                    System.out.println("Has elegido: Bajas.");
+
+                    String codLibroBaja = validarISBN(scanner);
+
+                    try (Connection conn = connectMySQL()) {
+                        boolean resultado = borrarLibro(conn, codLibroBaja);
+                        if (resultado) {
+                            System.out.println("Libro eliminado correctamente.");
+                        } else {
+                            System.out.println("Error al eliminar el libro.");
+                        }
+                    } catch (SQLException e) {
+                        System.out.println("Error de conexión o SQL:");
+                        e.printStackTrace();
+                    }
+
+                    break; // Se queda en el submenú para seguir eligiendo
+
+                case "3":
+                    System.out.println("Has elegido: Modificaciones.");
+
+                    // Solicitar el ISBN del libro a modificar
+                    String isbnModificar = validarISBN(scanner);
+
+                    // Conectar a la base de datos
+                    try (Connection conn = connectMySQL()) {
+                        // Verificar si el libro existe
+                        String checkSql = "SELECT * FROM libros WHERE isbn = ?";
+                        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                            checkStmt.setString(1, isbnModificar);
+                            ResultSet rs = checkStmt.executeQuery();
+
+                            if (!rs.next()) {
+                                System.out.println("No se encontró un libro con el ISBN proporcionado.");
+                                return; // Salir si no se encuentra el libro
+                            }
+
+                            // Menú de modificación
+                            boolean modificar = true;
+                            while (modificar) {
+                                System.out.println("\n--- Menú de Modificación de Libro ---");
+                                System.out.println("1. Modificar Título");
+                                System.out.println("2. Modificar Número de Copias");
+                                System.out.println("3. Modificar Valoración (1 a 5)");
+                                System.out.println("4. Regresar al menú anterior");
+                                System.out.print("Seleccione una opción: ");
+
+                                String opcionModificar = scanner.nextLine().trim();
+
+                                switch (opcionModificar) {
+                                    case "1":
+                                        // Modificar título
+                                        modificarTitulo(conn, isbnModificar, scanner);
+                                        break;
+
+                                    case "2":
+                                        // Modificar número de copias
+                                        modificarNumeroCopias(conn, isbnModificar, scanner);
+                                        break;
+
+                                    case "3":
+                                        // Modificar valoración
+                                        modificarValoracion(conn, isbnModificar, scanner);
+                                        break;
+
+                                    case "4":
+                                        // Regresar al menú anterior
+                                        modificar = false;
+                                        break;
+
+                                    default:
+                                        System.out
+                                                .println("Opción no válida. Por favor, seleccione una opción válida.");
+                                        break;
+                                }
+                            }
+                        }
+                    } catch (SQLException e) {
+                        System.out.println("Error de conexión o SQL:");
+                        e.printStackTrace();
+                    }
+                    break; // Se queda en el submenú para seguir eligiendo
+
+                case "4":
+                    System.out.println("Has elegido: Consulta de datos.");
+                    String opcionConsulta;
+                    do {
+                        System.out.println("\n--- CONSULTAR LIBROS ---");
+                        System.out.println("1. Todos los datos");
+                        System.out.println("2. Filtrar por ISBN");
+                        System.out.print("Elige una opción (1 o 2): ");
+                        opcionConsulta = scanner.nextLine().trim();
+
+                        if (!opcionConsulta.equals("1") && !opcionConsulta.equals("2")) {
+                            System.out.println("Opción no válida. Por favor elige 1 o 2.");
+                        }
+                    } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2"));
+
+                    // Leer opción usuario
+                    switch (opcionConsulta) {
+                        case "1":
+                            // Consulta todos los libros
+                            consultarLibros(connectMySQL(), 0);
+                            break;
+
+                        case "2":
+                            String isbnBuscar = validarISBN(scanner);
+                            consultarLibroPorISBN(connectMySQL(), isbnBuscar);
+                            break;
+
+                        default:
+                            break;
+                    }
+                    break; // Se queda en el submenú para seguir eligiendo
+
+                case "5":
+                    System.out.println("\nVolviendo al menú principal...\n");
+                    continuar = false; // Cambia la variable para salir del bucle
+                    return; // Sale del submenú y vuelve al menú principal
+
+                default:
+                    System.out.println("Opción no válida en el menú de libros. Intente nuevamente.\n");
+            }
+        }
     }
 
     // Submenú autores
@@ -344,8 +472,46 @@ public class GestionBibliotecaMuskiz {
 
                 case "4":
                     System.out.println("Has elegido: Consulta de datos.");
-                    // Aquí iría la lógica para consultar datos
-                    break; // Se queda en el submenú para seguir eligiendo
+                    String opcionConsulta;
+                    do {
+                        System.out.println("\n--- CONSULTAR AUTOR ---");
+                        System.out.println("1. Todos los datos");
+                        System.out.println("2. Filtrar por Nombre de autor");
+                        System.out.print("Elige una opción (1 o 2): ");
+                        opcionConsulta = scanner.nextLine().trim();
+
+                        if (!opcionConsulta.equals("1") && !opcionConsulta.equals("2")) {
+                        System.out.println("Opción no válida. Por favor elige 1 o 2.");
+                        }
+                    } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2"));
+
+                    // Leer opción usuario
+                    switch (opcionConsulta) {
+                        case "1":
+                            // Consulta todos los libros
+                            consultarAutores(connectMySQL(), 0);
+                            break;
+
+                        case "2":
+                            String nombreAutor;
+                            do {
+                                System.out.print("Introduce el nombre del autor a buscar: ");
+                                nombreAutor = scanner.nextLine().trim();
+                
+                                if (nombreAutor.isEmpty() || !nombreAutor.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
+                                    System.out.println("Nombre no válido. Debe contener solo letras y no estar vacío.");
+                                    nombreAutor = null; // Forzar repetición
+                                }
+                            } while (nombreAutor == null);
+                
+                            if (!consultarAutorPorNombre(connectMySQL(), nombreAutor)) {
+                                System.out.println("No se encontró el autor con el nombre: " + nombreAutor);
+                            }
+                            break;                 
+
+                        default:
+                            break;
+                    }
 
                 case "5":
                     System.out.println("\nVolviendo al menú principal...\n");
@@ -358,118 +524,74 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
-    // Submenú libros
-    public static void mostrarMenuLibros(Scanner scanner) {
-        boolean continuar = true; // Variable para controlar el bucle
-        while (continuar) {
-            System.out.println("\n--- Menú de Libros ---");
-            System.out.println("1. Altas.");
-            System.out.println("2. Bajas.");
-            System.out.println("3. Modificaciones.");
-            System.out.println("4. Consulta de datos.");
-            System.out.println("5. Regresar a menú principal.");
-            System.out.print("Seleccione una opción: ");
+    /// FUNCIONES ///
+    // Conexión a la base de datos
+    public static Connection connectMySQL() {
+        String url = "jdbc:mysql://127.0.0.1:3306/www";
+        String user = "www";
+        String password = "www";
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(url, user, password);
+            // System.out.println("Conexión exitosa a la base de datos.");
+        } catch (SQLException e) {
+            System.out.println(
+                    "Error al conectar a la base de datos, por favor crea un ticket con el error para solventar el problema: "
+                            + e.getMessage());
+        }
+        return conn;
+    }
 
-            // Leer opción usuario
-            String opcionLibro = scanner.nextLine();
+    // Generador de codigos aleatorios
+    public static int generarCodigo(int num) {
+        int cod = (int) (Math.random() * num) + 1;
+        return cod;
+    }
 
-            // Evaluar opción
-            switch (opcionLibro) {
-                case "1":
-                    System.out.println("Has elegido: Altas.");
-                    Scanner sc = new Scanner(System.in);
-                    String isbn, titulo;
-                    int nCopias = 0, valoracion = 0;
+    // Alta tabla Libros
+    private static void agregarLibro(Scanner scanner) {
+        System.out.println("Has elegido: Altas.");
 
-                    // Validar ISBN: exactamente 13 dígitos numéricos
-                    do {
-                        System.out.print("Introduce el ISBN del libro (13 dígitos): ");
-                        isbn = sc.nextLine().trim();
-                        if (isbn.isEmpty()) {
-                            System.out.println("El ISBN no puede estar vacío.");
-                        } else if (!isbn.matches("\\d{13}")) {
-                            System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos sin guiones.");
-                            isbn = "";
-                        }
-                    } while (isbn.isEmpty());
+        String isbn = validarISBN(scanner);
+        String titulo = validarTitulo(scanner);
+        int nCopias = validarNumeroCopias(scanner);
+        int valoracion = validarValoracion(scanner);
 
-                    // Validar título: no vacío y no solo numérico
-                    do {
-                        System.out.print("Introduce el título del libro: ");
-                        titulo = sc.nextLine().trim();
-                        if (titulo.isEmpty()) {
-                            System.out.println("El título no puede estar vacío.");
-                        } else if (titulo.matches("\\d+")) {
-                            System.out.println("El título no puede ser solo números.");
-                            titulo = "";
-                        }
-                    } while (titulo.isEmpty());
+        // Generar cod_libro aleatorio único
+        int codLibro;
+        boolean codUnico = false;
 
-                    // Validar número de copias: numérico y positivo
-                    do {
-                        System.out.print("Introduce el número de copias: ");
-                        String entrada = sc.nextLine().trim();
-                        try {
-                            nCopias = Integer.parseInt(entrada);
-                            if (nCopias < 1) {
-                                System.out.println("Debe haber al menos una copia.");
-                                nCopias = 0;
-                            }
-                        } catch (NumberFormatException e) {
-                            System.out.println("Ingresa un número válido.");
-                        }
-                    } while (nCopias == 0);
+        try (Connection conn = connectMySQL()) {
 
-                    // Validar valoración: entre 1 y 5
-                    do {
-                        System.out.print("Introduce la valoración (1 a 5): ");
-                        String entrada = sc.nextLine().trim();
-                        try {
-                            valoracion = Integer.parseInt(entrada);
-                            if (valoracion < 1 || valoracion > 5) {
-                                System.out.println("La valoración debe estar entre 1 y 5.");
-                                valoracion = 0;
-                            }
-                        } catch (NumberFormatException e) {
-                            System.out.println("Ingresa un número válido.");
-                        }
-                    } while (valoracion == 0);
+            do {
+                codLibro = generarCodigo(99999999);
 
-                    // Generar cod_libro aleatorio único
-                    int codLibro;
-                    boolean codUnico = false;
+                String checkSql = "SELECT COUNT(*) FROM libros WHERE cod_libro = ?";
+                try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                    checkStmt.setInt(1, codLibro);
+                    ResultSet rs = checkStmt.executeQuery();
+                    if (rs.next() && rs.getInt(1) == 0) {
+                        codUnico = true;
+                    }
+                }
+            } while (!codUnico);
 
-                    try (Connection conn = connectMySQL()) {
+            // Insertar libro
+            String sql = "INSERT INTO libros (cod_libro, isbn, titulo, n_copias, valoracion) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, codLibro);
+                stmt.setString(2, isbn);
+                stmt.setString(3, titulo);
+                stmt.setInt(4, nCopias);
+                stmt.setInt(5, valoracion);
 
-                        do {
-                            codLibro = generarCodigo(99999999);
-
-                            String checkSql = "SELECT COUNT(*) FROM libros WHERE cod_libro = ?";
-                            try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                                checkStmt.setInt(1, codLibro);
-                                ResultSet rs = checkStmt.executeQuery();
-                                if (rs.next() && rs.getInt(1) == 0) {
-                                    codUnico = true;
-                                }
-                            }
-                        } while (!codUnico);
-
-                        // Insertar libro
-                        String sql = "INSERT INTO libros (cod_libro, isbn, titulo, n_copias, valoracion) VALUES (?, ?, ?, ?, ?)";
-                        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                            stmt.setInt(1, codLibro);
-                            stmt.setString(2, isbn);
-                            stmt.setString(3, titulo);
-                            stmt.setInt(4, nCopias);
-                            stmt.setInt(5, valoracion);
-
-                            int filas = stmt.executeUpdate();
-                            if (filas > 0) {
-                                System.out.println("Libro agregado correctamente con código: " + codLibro);
-                            } else {
-                                System.out.println("Error al insertar el libro.");
-                            }
-                        }
+                int filas = stmt.executeUpdate();
+                if (filas > 0) {
+                    System.out.println("Libro agregado correctamente con código: " + codLibro);
+                } else {
+                    System.out.println("Error al insertar el libro.");
+                }
+            }
 
                     } catch (SQLException e) {
                         System.out.println("Error de conexión o SQL:");
@@ -481,7 +603,7 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Bajas.");
 
-                    System.out.print("Introduce el código del libro a eliminar: ");
+                    System.out.print("Introduce el ISBN del libro a eliminar: ");
                     String codLibroBaja = scanner.nextLine().trim();
                     // Validar que el código no esté vacío y sea numérico
                     if (codLibroBaja.isEmpty()) {
@@ -567,7 +689,7 @@ public class GestionBibliotecaMuskiz {
         // En caso de ser 0, muestra todo
         Statement stm = null;
         ResultSet rs = null;
-        String sql = "SELECT * FROM LIBROS";
+        String sql = "SELECT * FROM libros";
         String cod_libro, isbn, titulo;
 
         try {
@@ -588,6 +710,85 @@ public class GestionBibliotecaMuskiz {
                     .println("\nProblema al consultar: " + "\n" + sql + "\n" + e.getErrorCode() + " " + e.getMessage());
         }
     }
+
+    // Consultar tabla Libros filtrando ISBN
+    public static void consultarLibroPorISBN(Connection conn, String isbn) {
+        String sql = "SELECT * FROM libros WHERE isbn = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, isbn);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                System.out.println("Código: " + rs.getInt("cod_libro") +
+                        ", ISBN: " + rs.getString("isbn") +
+                        ", Título: " + rs.getString("titulo") +
+                        ", Copias: " + rs.getInt("n_copias") +
+                        ", Valoración: " + rs.getInt("valoracion"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al consultar por ISBN: " + e.getMessage());
+        }
+    }
+
+
+
+    // Consultar tabla Autores filtrando por nombre
+    public static boolean consultarAutorPorNombre(java.sql.Connection conn, String nombreAutor) {
+        String sql = "SELECT * FROM autores WHERE nombre LIKE ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, "%" + nombreAutor + "%");
+            ResultSet rs = stmt.executeQuery();
+            boolean encontrado = false;
+    
+            while (rs.next()) {
+                System.out.println("Código Autor: " + rs.getInt("cod_autor") +
+                                   ", Nombre: " + rs.getString("nombre") +
+                                   ", Apellido: " + rs.getString("apellido") +
+                                   ", País: " + rs.getInt("cod_pais"));
+                encontrado = true;
+            }
+            
+            if (!encontrado) {
+                // No se encontró el autor
+                return false;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al consultar autor por nombre: " + e.getMessage());
+        }
+        return true; // Si se encontró al menos un autor
+    }
+    
+    
+
+
+
+    // Alta tabla Autores
+
+    // Borrar autor (baja)
+    public static boolean borrarAutor(Connection conn, String codAutorBaja) {
+        PreparedStatement pstmt = null;
+        int borrados;
+        String sql = "DELETE FROM autores WHERE cod_autor = ?";
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, codAutorBaja); // Set the value for the placeholder
+            borrados = pstmt.executeUpdate();
+            return (borrados > 0);
+        } catch (Exception e) {
+            System.out.println("Problema al borrar: " + "\n" + e.getMessage());
+            return false;
+        } finally {
+            // Close the PreparedStatement to free resources
+            if (pstmt != null) {
+                try {
+                    pstmt.close();
+                } catch (SQLException e) {
+                    System.out.println("Error closing PreparedStatement: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    // Modificar numero de copias tabla Autores
 
     // Consultar tabla Autores
     public static void consultarAutores(Connection conn, int totalRegistros) {
@@ -618,55 +819,44 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
-    // Borrar autor (baja)
-    public static boolean borrarAutor(Connection conn, String codAutorBaja) {
-        PreparedStatement pstmt = null;
-        int borrados;
-        String sql = "DELETE FROM autores WHERE cod_autor = ?";
-        try {
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, codAutorBaja); // Set the value for the placeholder
-            borrados = pstmt.executeUpdate();
-            return (borrados > 0);
-        } catch (Exception e) {
-            System.out.println("Problema al borrar: " + "\n" + e.getMessage());
-            return false;
-        } finally {
-            // Close the PreparedStatement to free resources
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    System.out.println("Error closing PreparedStatement: " + e.getMessage());
-                }
+    // Validadores para la tabla Libros
+    // Validar ISBN: exactamente 13 dígitos numéricos
+    private static String validarISBN(Scanner scanner) {
+        String isbn;
+        do {
+            System.out.print("Introduce el ISBN del libro (13 dígitos): ");
+            isbn = scanner.nextLine().trim();
+            if (isbn.isEmpty() || !isbn.matches("\\d{13}")) {
+                System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
             }
-        }
+        } while (isbn.isEmpty() || !isbn.matches("\\d{13}"));
+        return isbn;
+    }
+
+    // Validar título: no vacío y no solo numérico
+    private static String validarTitulo(Scanner scanner) {
+        String titulo;
+        do {
+            System.out.print("Introduce el título del libro: ");
+            titulo = scanner.nextLine().trim();
+            if (titulo.isEmpty() || titulo.matches("\\d+")) {
+                System.out.println("El título no puede estar vacío y no puede ser solo números.");
+            }
+        } while (titulo.isEmpty() || titulo.matches("\\d+"));
+        return titulo;
     }
 
     // Borrar libro (baja)
     public static boolean borrarLibro(Connection conn, String codLibroBaja) {
-        PreparedStatement pstmt = null;
-        int borrados;
         String sql = "DELETE FROM libros WHERE cod_libro = ?";
-        try {
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, codLibroBaja); // Set the value for the placeholder
-            borrados = pstmt.executeUpdate();
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setString(1, codLibroBaja);
+            int borrados = pst.executeUpdate();
             return (borrados > 0);
-        } catch (Exception e) {
-            System.out.println("Problema al borrar: " + "\n" + e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Problema al borrar:\n" + e.getMessage());
             return false;
-        } /* finally {
-            // Close the PreparedStatement to free resources
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    System.out.println("Error closing PreparedStatement: " + e.getMessage());
-                }
-            }
         }
-        */
     }
 
     public static void consultarLibroPorISBN(Connection conn, String isbn) {
