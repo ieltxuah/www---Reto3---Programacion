@@ -502,7 +502,144 @@ public class GestionBibliotecaMuskiz {
 
                 case "3":
                     System.out.println("Has elegido: Modificaciones.");
-                    // Aquí iría la lógica para modificaciones
+
+                    // Solicitar el ISBN del libro a modificar
+                    String isbnModificar;
+                    do {
+                        System.out.print("Introduce el ISBN del libro a modificar (13 dígitos): ");
+                        isbnModificar = scanner.nextLine().trim();
+                        if (!isbnModificar.matches("\\d{13}")) {
+                            System.out.println("ISBN no válido. Debe contener exactamente 13 dígitos.");
+                        }
+                    } while (!isbnModificar.matches("\\d{13}"));
+
+                    // Conectar a la base de datos
+                    try (Connection conn = connectMySQL()) {
+                        // Verificar si el libro existe
+                        String checkSql = "SELECT * FROM libros WHERE isbn = ?";
+                        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                            checkStmt.setString(1, isbnModificar);
+                            ResultSet rs = checkStmt.executeQuery();
+
+                            if (!rs.next()) {
+                                System.out.println("No se encontró un libro con el ISBN proporcionado.");
+                                return; // Salir si no se encuentra el libro
+                            }
+
+                            // Menú de modificación
+                            boolean modificar = true;
+                            while (modificar) {
+                                System.out.println("\n--- Menú de Modificación de Libro ---");
+                                System.out.println("1. Modificar Título");
+                                System.out.println("2. Modificar Número de Copias");
+                                System.out.println("3. Modificar Valoración (1 a 5)");
+                                System.out.println("4. Regresar al menú anterior");
+                                System.out.print("Seleccione una opción: ");
+
+                                String opcionModificar = scanner.nextLine().trim();
+
+                                switch (opcionModificar) {
+                                    case "1":
+                                        // Modificar título
+                                        System.out.print("Introduce el nuevo título del libro: ");
+                                        String nuevoTitulo = scanner.nextLine().trim();
+                                        if (!nuevoTitulo.isEmpty() && !nuevoTitulo.matches("\\d+")) {
+                                            String updateTituloSql = "UPDATE libros SET titulo = ? WHERE isbn = ?";
+                                            try (PreparedStatement updateTituloStmt = conn
+                                                    .prepareStatement(updateTituloSql)) {
+                                                updateTituloStmt.setString(1, nuevoTitulo);
+                                                updateTituloStmt.setString(2, isbnModificar);
+                                                int filasAfectadas = updateTituloStmt.executeUpdate();
+                                                if (filasAfectadas > 0) {
+                                                    System.out.println("Título actualizado correctamente.");
+                                                } else {
+                                                    System.out.println("Error al actualizar el título.");
+                                                }
+                                            }
+                                        } else {
+                                            System.out.println(
+                                                    "El título no puede estar vacío y no puede ser solo numérico.");
+                                        }
+                                        break;
+
+                                    case "2":
+                                        // Modificar número de copias
+                                        int nCopiasModificar = 0;
+                                        do {
+                                            System.out.print("Introduce el nuevo número de copias: ");
+                                            String entrada = scanner.nextLine().trim();
+                                            try {
+                                                nCopiasModificar = Integer.parseInt(entrada);
+                                                if (nCopiasModificar < 1) {
+                                                    System.out.println("Debe haber al menos una copia.");
+                                                    nCopiasModificar = 0;
+                                                }
+                                            } catch (NumberFormatException e) {
+                                                System.out.println("Ingresa un número válido.");
+                                            }
+                                        } while (nCopiasModificar == 0);
+
+                                        String updateCopiasSql = "UPDATE libros SET n_copias = ? WHERE isbn = ?";
+                                        try (PreparedStatement updateCopiasStmt = conn
+                                                .prepareStatement(updateCopiasSql)) {
+                                            updateCopiasStmt.setInt(1, nCopiasModificar);
+                                            updateCopiasStmt.setString(2, isbnModificar);
+                                            int filasAfectadas = updateCopiasStmt.executeUpdate();
+                                            if (filasAfectadas > 0) {
+                                                System.out.println("Número de copias actualizado correctamente.");
+                                            } else {
+                                                System.out.println("Error al actualizar el número de copias.");
+                                            }
+                                        }
+                                        break;
+
+                                    case "3":
+                                        // Modificar valoración
+                                        int valoracionModificar = 0;
+                                        do {
+                                            System.out.print("Introduce la nueva valoración (1 a 5): ");
+                                            String entrada = scanner.nextLine().trim();
+                                            try {
+                                                valoracionModificar = Integer.parseInt(entrada);
+                                                if (valoracionModificar < 1 || valoracionModificar > 5) {
+                                                    System.out.println("La valoración debe estar entre 1 y 5.");
+                                                    valoracionModificar = 0;
+                                                }
+                                            } catch (NumberFormatException e) {
+                                                System.out.println("Ingresa un número válido.");
+                                            }
+                                        } while (valoracionModificar == 0);
+
+                                        String updateValoracionSql = "UPDATE libros SET valoracion = ? WHERE isbn = ?";
+                                        try (PreparedStatement updateValoracionStmt = conn
+                                                .prepareStatement(updateValoracionSql)) {
+                                            updateValoracionStmt.setInt(1, valoracionModificar);
+                                            updateValoracionStmt.setString(2, isbnModificar);
+                                            int filasAfectadas = updateValoracionStmt.executeUpdate();
+                                            if (filasAfectadas > 0) {
+                                                System.out.println("Valoración actualizada correctamente.");
+                                            } else {
+                                                System.out.println("Error al actualizar la valoración.");
+                                            }
+                                        }
+                                        break;
+
+                                    case "4":
+                                        // Regresar al menú anterior
+                                        modificar = false;
+                                        break;
+
+                                    default:
+                                        System.out
+                                                .println("Opción no válida. Por favor, seleccione una opción válida.");
+                                        break;
+                                }
+                            }
+                        }
+                    } catch (SQLException e) {
+                        System.out.println("Error de conexión o SQL:");
+                        e.printStackTrace();
+                    }
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "4":
