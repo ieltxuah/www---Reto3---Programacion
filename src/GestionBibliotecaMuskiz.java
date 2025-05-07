@@ -88,7 +88,9 @@ public class GestionBibliotecaMuskiz {
 
     // Submenú autores
     public static void mostrarMenuAutores(Scanner scanner) {
-        while (true) {
+        boolean continuar = true; // Variable para controlar el bucle
+
+        while (continuar) {
             System.out.println("\n--- Menú de Autores ---");
             System.out.println("1. Altas.");
             System.out.println("2. Bajas.");
@@ -188,7 +190,7 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Bajas.");
                     // Aquí iría la lógica para bajas
-                    System.out.println("Introduce el código del autor a eliminar: ");
+                    System.out.print("Introduce el código del autor a eliminar: ");
                     String codAutorBaja = scanner.nextLine().trim();
                     // Validar que el código no esté vacío y sea numérico
                     if (codAutorBaja.isEmpty()) {
@@ -219,18 +221,19 @@ public class GestionBibliotecaMuskiz {
 
                 case "5":
                     System.out.println("\nVolviendo al menú principal...\n");
-                    return; // Sale del submenú y vuelve al menú principal
+                    continuar = false; // Cambia la variable para salir del bucle
+                    break;
 
                 default:
                     System.out.println("Opción no válida en el menú de autores. Intente nuevamente.\n");
             }
-            break;
         }
     }
 
     // Submenú libros
     public static void mostrarMenuLibros(Scanner scanner) {
-        while (true) {
+        boolean continuar = true; // Variable para controlar el bucle
+        while (continuar) {
             System.out.println("\n--- Menú de Libros ---");
             System.out.println("1. Altas.");
             System.out.println("2. Bajas.");
@@ -369,6 +372,7 @@ public class GestionBibliotecaMuskiz {
 
                 case "5":
                     System.out.println("\nVolviendo al menú principal...\n");
+                    continuar = false; // Cambia la variable para salir del bucle
                     return; // Sale del submenú y vuelve al menú principal
 
                 default:
