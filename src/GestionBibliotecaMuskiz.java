@@ -188,7 +188,18 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Bajas.");
                     // Aquí iría la lógica para bajas
-
+                    System.out.println("Inserte código de autor para dar de baja: ");
+                    String codAutorBaja = scanner.nextLine();
+                    Connection conn = connectMySQL();
+                    if (conn != null) {
+                        if (borrarUsuario(conn, codAutorBaja)) {
+                            System.out.println("Autor dado de baja correctamente.");
+                        } else {
+                            System.out.println("Error al dar de baja el autor.");
+                        }
+                    } else {
+                        System.out.println("No se pudo conectar a la base de datos para dar de baja el autor.");
+                    }
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "3":
@@ -338,6 +349,7 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Bajas.");
                     // Aquí iría la lógica para bajas
+                    
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "3":
