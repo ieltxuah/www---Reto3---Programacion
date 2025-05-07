@@ -472,8 +472,46 @@ public class GestionBibliotecaMuskiz {
 
                 case "4":
                     System.out.println("Has elegido: Consulta de datos.");
-                    // Aquí iría la lógica para consultar datos
-                    break; // Se queda en el submenú para seguir eligiendo
+                    String opcionConsulta;
+                    do {
+                        System.out.println("\n--- CONSULTAR AUTOR ---");
+                        System.out.println("1. Todos los datos");
+                        System.out.println("2. Filtrar por Nombre de autor");
+                        System.out.print("Elige una opción (1 o 2): ");
+                        opcionConsulta = scanner.nextLine().trim();
+
+                        if (!opcionConsulta.equals("1") && !opcionConsulta.equals("2")) {
+                        System.out.println("Opción no válida. Por favor elige 1 o 2.");
+                        }
+                    } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2"));
+
+                    // Leer opción usuario
+                    switch (opcionConsulta) {
+                        case "1":
+                            // Consulta todos los libros
+                            consultarAutores(connectMySQL(), 0);
+                            break;
+
+                        case "2":
+                            String nombreAutor;
+                            do {
+                                System.out.print("Introduce el nombre del autor a buscar: ");
+                                nombreAutor = scanner.nextLine().trim();
+                
+                                if (nombreAutor.isEmpty() || !nombreAutor.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
+                                    System.out.println("Nombre no válido. Debe contener solo letras y no estar vacío.");
+                                    nombreAutor = null; // Forzar repetición
+                                }
+                            } while (nombreAutor == null);
+                
+                            if (!consultarAutorPorNombre(connectMySQL(), nombreAutor)) {
+                                System.out.println("No se encontró el autor con el nombre: " + nombreAutor);
+                            }
+                            break;                 
+
+                        default:
+                            break;
+                    }
 
                 case "5":
                     System.out.println("\nVolviendo al menú principal...\n");
@@ -679,6 +717,38 @@ public class GestionBibliotecaMuskiz {
             System.out.println("Error al consultar por ISBN: " + e.getMessage());
         }
     }
+
+
+
+    // Consultar tabla Autores filtrando por nombre
+    public static boolean consultarAutorPorNombre(java.sql.Connection conn, String nombreAutor) {
+        String sql = "SELECT * FROM autores WHERE nombre LIKE ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, "%" + nombreAutor + "%");
+            ResultSet rs = stmt.executeQuery();
+            boolean encontrado = false;
+    
+            while (rs.next()) {
+                System.out.println("Código Autor: " + rs.getInt("cod_autor") +
+                                   ", Nombre: " + rs.getString("nombre") +
+                                   ", Apellido: " + rs.getString("apellido") +
+                                   ", País: " + rs.getInt("cod_pais"));
+                encontrado = true;
+            }
+            
+            if (!encontrado) {
+                // No se encontró el autor
+                return false;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al consultar autor por nombre: " + e.getMessage());
+        }
+        return true; // Si se encontró al menos un autor
+    }
+    
+    
+
+
 
     // Alta tabla Autores
 
