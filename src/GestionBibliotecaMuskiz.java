@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
+import java.sql.Statement;
 
 public class GestionBibliotecaMuskiz {
     public static void main(String[] args) throws Exception {
@@ -187,6 +188,7 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Bajas.");
                     // Aquí iría la lógica para bajas
+
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "3":
@@ -356,6 +358,61 @@ public class GestionBibliotecaMuskiz {
                     System.out.println("Opción no válida en el menú de libros. Intente nuevamente.\n");
             }
             break;
+        }
+    }
+
+    /// FUNCIONES ///
+    
+    // Consultar tabla Libros
+    public static void consultarLibros(Connection conn, int totalRegistros) {
+        // Realizamos la consulta sql para mostrar todos los datos de la tabla
+        // Muestra hasta el total de registros que le decimos
+        // En caso de ser 0, muestra todo
+        Statement stm = null;
+        ResultSet rs = null;
+        String sql = "SELECT * FROM LIBROS";
+        String cod_libro, isbn, titulo;
+
+        try {
+            stm = conn.createStatement();
+            rs = stm.executeQuery(sql);
+            System.out.println("TODOS LOS REGISTROS DE LA TABLA LIBROS: \n");
+            int cont = 0;
+            while (rs.next()) {
+                cod_libro = rs.getString("cod_libro");
+                isbn = rs.getString("ISBN");
+                titulo = rs.getString("titulo");
+                System.out.println(cod_libro + " | " + isbn + " | " + titulo);
+                if (cont > totalRegistros && totalRegistros !=0) break;
+            }
+        } catch (SQLException e) {
+            System.out.println("\nProblema al consultar: " + "\n" + sql + "\n" + e.getErrorCode() + " " + e.getMessage());
+        }
+    }
+    // Consultar tabla Autores
+    public static void consultarAutores(Connection conn, int totalRegistros) {
+        // Realizamos la consulta sql para mostrar todos los datos de la tabla
+        // Muestra hasta el total de registros que le decimos
+        // En caso de ser 0, muestra todo
+        Statement stm = null;
+        ResultSet rs = null;
+        String sql = "SELECT * FROM AUTORES";
+        String cod_autor, nombre, apellido;
+
+        try {
+            stm = conn.createStatement();
+            rs = stm.executeQuery(sql);
+            System.out.println("TODOS LOS REGISTROS DE LA TABLA AUTORES: \n");
+            int cont = 0;
+            while (rs.next()) {
+                cod_autor = rs.getString("cod_autor");
+                nombre = rs.getString("nombre");
+                apellido = rs.getString("apellido");
+                System.out.println(cod_autor + " | " + nombre + " | " + apellido);
+                if (cont > totalRegistros && totalRegistros !=0) break;
+            }
+        } catch (SQLException e) {
+            System.out.println("\nProblema al consultar: " + "\n" + sql + "\n" + e.getErrorCode() + " " + e.getMessage());
         }
     }
 }
