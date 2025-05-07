@@ -208,7 +208,139 @@ public class GestionBibliotecaMuskiz {
 
                 case "3":
                     System.out.println("Has elegido: Modificaciones.");
-                    // Aquí iría la lógica para modificaciones
+
+                    String codAutorModificar = "";
+                    boolean autorValido = false;
+
+                    // Bucle para solicitar el código del autor hasta que sea válido
+                    while (!autorValido) {
+                        System.out.print("Introduce el código del autor a modificar: ");
+                        codAutorModificar = scanner.nextLine().trim();
+
+                        // Validar que el código no esté vacío y sea numérico
+                        if (codAutorModificar.isEmpty()) {
+                            System.out.println("El código no puede estar vacío.");
+                        } else if (!codAutorModificar.matches("\\d+")) {
+                            System.out.println("El código debe ser numérico.");
+                        } else {
+                            // Conectar a la base de datos
+                            try (Connection conn = connectMySQL()) {
+                                // Verificar si el autor existe
+                                String checkSql = "SELECT * FROM autores WHERE cod_autor = ?";
+                                try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                                    checkStmt.setInt(1, Integer.parseInt(codAutorModificar));
+                                    ResultSet rs = checkStmt.executeQuery();
+
+                                    if (rs.next()) {
+                                        autorValido = true; // Autor encontrado, salir del bucle
+                                    } else {
+                                        System.out.println(
+                                                "No se encontró un autor con el código proporcionado. Inténtalo de nuevo.");
+                                    }
+                                }
+                            } catch (SQLException e) {
+                                System.out.println("Error de conexión o SQL:");
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                    // Si llegamos aquí, el código del autor es válido
+                    // Mantener la conexión abierta para el menú de modificación
+                    try (Connection conn = connectMySQL()) {
+                        boolean modificar = true;
+                        while (modificar) {
+                            System.out.println("\n--- Menú de Modificación de Autor ---");
+                            System.out.println("1. Modificar Nombre");
+                            System.out.println("2. Modificar Apellido");
+                            System.out.println("3. Modificar Código de País");
+                            System.out.println("4. Regresar al menú anterior");
+                            System.out.print("Seleccione una opción: ");
+
+                            String opcionModificar = scanner.nextLine().trim();
+
+                            switch (opcionModificar) {
+                                case "1":
+                                    // Modificar nombre
+                                    System.out.print("Introduce el nuevo nombre del autor: ");
+                                    String nuevoNombre = scanner.nextLine().trim();
+                                    if (!nuevoNombre.isEmpty()) {
+                                        String updateNombreSql = "UPDATE autores SET nombre = ? WHERE cod_autor = ?";
+                                        try (PreparedStatement updateNombreStmt = conn
+                                                .prepareStatement(updateNombreSql)) {
+                                            updateNombreStmt.setString(1, nuevoNombre);
+                                            updateNombreStmt.setInt(2, Integer.parseInt(codAutorModificar));
+                                            int filasAfectadas = updateNombreStmt.executeUpdate();
+                                            if (filasAfectadas > 0) {
+                                                System.out.println("Nombre actualizado correctamente.");
+                                            } else {
+                                                System.out.println("Error al actualizar el nombre.");
+                                            }
+                                        }
+                                    } else {
+                                        System.out.println("El nombre no puede estar vacío.");
+                                    }
+                                    break;
+
+                                case "2":
+                                    // Modificar apellido
+                                    System.out.print("Introduce el nuevo apellido del autor: ");
+                                    String nuevoApellido = scanner.nextLine().trim();
+                                    if (!nuevoApellido.isEmpty()) {
+                                        String updateApellidoSql = "UPDATE autores SET apellido = ? WHERE cod_autor = ?";
+                                        try (PreparedStatement updateApellidoStmt = conn
+                                                .prepareStatement(updateApellidoSql)) {
+                                            updateApellidoStmt.setString(1, nuevoApellido);
+                                            updateApellidoStmt.setInt(2, Integer.parseInt(codAutorModificar));
+                                            int filasAfectadas = updateApellidoStmt.executeUpdate();
+                                            if (filasAfectadas > 0) {
+                                                System.out.println("Apellido actualizado correctamente.");
+                                            } else {
+                                                System.out.println("Error al actualizar el apellido.");
+                                            }
+                                        }
+                                    } else {
+                                        System.out.println("El apellido no puede estar vacío.");
+                                    }
+                                    break;
+
+                                case "3":
+                                    // Modificar código de país
+                                    System.out.print("Introduce el nuevo código de país: ");
+                                    String codPaisInput = scanner.nextLine().trim();
+                                    if (!codPaisInput.isEmpty() && codPaisInput.matches("\\d+")) {
+                                        String updatePaisSql = "UPDATE autores SET cod_pais = ? WHERE cod_autor = ?";
+                                        try (PreparedStatement updatePaisStmt = conn.prepareStatement(updatePaisSql)) {
+                                            updatePaisStmt.setInt(1, Integer.parseInt(codPaisInput));
+                                            updatePaisStmt.setInt(2, Integer.parseInt(codAutorModificar));
+                                            int filasAfectadas = updatePaisStmt.executeUpdate();
+                                            if (filasAfectadas > 0) {
+                                                System.out.println("Código de país actualizado correctamente.");
+                                            } else {
+                                                System.out.println("Error al actualizar el código de país.");
+                                            }
+                                        }
+                                    } else {
+                                        System.out.println("El código de país debe ser numérico.");
+                                    }
+
+                                    break;
+
+                                case "4":
+                                    // Regresar al menú anterior
+                                    modificar = false;
+                                    break;
+
+                                default:
+                                    System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
+                                    break;
+                            }
+                        }
+                    } catch (SQLException e) {
+                        System.out.println("Error de conexión o SQL:");
+                        e.printStackTrace();
+                    }
+
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "4":
