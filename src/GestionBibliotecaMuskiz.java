@@ -204,7 +204,7 @@ public class GestionBibliotecaMuskiz {
                             System.out.println("Error al eliminar el autor.");
                         }
                     }
-                    
+
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "3":
@@ -434,10 +434,10 @@ public class GestionBibliotecaMuskiz {
     }
     
     // Borrar usuario (baja)
-    public static boolean borrarUsuario(Connection conn, String cod) {
+    public static boolean borrarUsuario(Connection conn, String codAutorBaja) {
         Statement st;
         int borrados;
-        String sql = "DELETE FROM USUARIOS WHERE USUCOD= cod_usuario";
+        String sql = "DELETE FROM USUARIOS WHERE cod_autor= ?";
         try {
             st = conn.createStatement();
             borrados = st.executeUpdate(sql);
