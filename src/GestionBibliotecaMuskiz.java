@@ -233,87 +233,11 @@ public class GestionBibliotecaMuskiz {
             // Evaluar opción
             switch (opcionAutor) {
                 case "1":
-                    System.out.println("Has elegido: Altas.");
-
-                    Scanner sc = new Scanner(System.in);
-                    String nombre, apellido;
-
-                    // Validar que el nombre no esté vacío ni sea numérico
-                    do {
-                        System.out.print("Introduce el nombre del autor: ");
-                        nombre = sc.nextLine().trim();
-
-                        if (nombre.isEmpty()) {
-                            System.out.println("El nombre no puede estar vacío.");
-                        } else if (nombre.matches("\\d+")) {
-                            System.out.println("El nombre no puede ser solo números.");
-                            nombre = ""; // Para repetir el ciclo
-                        }
-
-                    } while (nombre.isEmpty());
-
-                    // Validar que el apellido no esté vacío ni sea numérico
-                    do {
-                        System.out.print("Introduce el apellido del autor: ");
-                        apellido = sc.nextLine().trim();
-
-                        if (apellido.isEmpty()) {
-                            System.out.println("El apellido no puede estar vacío.");
-                        } else if (apellido.matches("\\d+")) {
-                            System.out.println("El apellido no puede ser solo números.");
-                            apellido = ""; // Para repetir el ciclo
-                        }
-
-                    } while (apellido.isEmpty());
-
-                    // Generar cod_autor aleatorio y comprobar que no exista
-                    int codAutor;
-                    boolean codUnico = false;
-
-                    try (Connection conn = connectMySQL()) {
-
-                        do {
-                            codAutor = generarCodigo(99999);
-
-                            // Verificar unicidad del cod_autor
-                            String checkSql = "SELECT COUNT(*) FROM autores WHERE cod_autor = ?";
-                            try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                                checkStmt.setInt(1, codAutor);
-                                ResultSet rs = checkStmt.executeQuery();
-                                if (rs.next() && rs.getInt(1) == 0) {
-                                    codUnico = true;
-                                }
-                            }
-                        } while (!codUnico);
-
-                        int codPais = generarCodigo(3);
-
-                        // Insertar el autor
-                        String sql = "INSERT INTO autores (cod_autor, nombre, apellido, cod_pais) VALUES (?, ?, ?, ?)";
-                        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                            stmt.setInt(1, codAutor);
-                            stmt.setString(2, nombre);
-                            stmt.setString(3, apellido);
-                            stmt.setInt(4, codPais);
-
-                            int filasAfectadas = stmt.executeUpdate();
-                            if (filasAfectadas > 0) {
-                                System.out.println("Autor agregado correctamente con ID: " + codAutor);
-                            } else {
-                                System.out.println("Error al agregar autor.");
-                            }
-                        }
-
-                    } catch (SQLException e) {
-                        System.out.println("Error de conexión o SQL:");
-                        e.printStackTrace();
-                    }
-
+                    agregarAutor(scanner);
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "2":
                     System.out.println("Has elegido: Bajas.");
-                    // Aquí iría la lógica para bajas
                     System.out.print("Introduce el código del autor a eliminar: ");
                     String codAutorBaja = scanner.nextLine().trim();
                     // Validar que el código no esté vacío y sea numérico
@@ -336,43 +260,8 @@ public class GestionBibliotecaMuskiz {
                 case "3":
                     System.out.println("Has elegido: Modificaciones.");
 
-                    String codAutorModificar = "";
-                    boolean autorValido = false;
+                    String codAutorModificar = validarCodigo(scanner);
 
-                    // Bucle para solicitar el código del autor hasta que sea válido
-                    while (!autorValido) {
-                        System.out.print("Introduce el código del autor a modificar: ");
-                        codAutorModificar = scanner.nextLine().trim();
-
-                        // Validar que el código no esté vacío y sea numérico
-                        if (codAutorModificar.isEmpty()) {
-                            System.out.println("El código no puede estar vacío.");
-                        } else if (!codAutorModificar.matches("\\d+")) {
-                            System.out.println("El código debe ser numérico.");
-                        } else {
-                            // Conectar a la base de datos
-                            try (Connection conn = connectMySQL()) {
-                                // Verificar si el autor existe
-                                String checkSql = "SELECT * FROM autores WHERE cod_autor = ?";
-                                try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                                    checkStmt.setInt(1, Integer.parseInt(codAutorModificar));
-                                    ResultSet rs = checkStmt.executeQuery();
-
-                                    if (rs.next()) {
-                                        autorValido = true; // Autor encontrado, salir del bucle
-                                    } else {
-                                        System.out.println(
-                                                "No se encontró un autor con el código proporcionado. Inténtalo de nuevo.");
-                                    }
-                                }
-                            } catch (SQLException e) {
-                                System.out.println("Error de conexión o SQL:");
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-
-                    // Si llegamos aquí, el código del autor es válido
                     // Mantener la conexión abierta para el menú de modificación
                     try (Connection conn = connectMySQL()) {
                         boolean modificar = true;
@@ -389,67 +278,17 @@ public class GestionBibliotecaMuskiz {
                             switch (opcionModificar) {
                                 case "1":
                                     // Modificar nombre
-                                    System.out.print("Introduce el nuevo nombre del autor: ");
-                                    String nuevoNombre = scanner.nextLine().trim();
-                                    if (!nuevoNombre.isEmpty()) {
-                                        String updateNombreSql = "UPDATE autores SET nombre = ? WHERE cod_autor = ?";
-                                        try (PreparedStatement updateNombreStmt = conn
-                                                .prepareStatement(updateNombreSql)) {
-                                            updateNombreStmt.setString(1, nuevoNombre);
-                                            updateNombreStmt.setInt(2, Integer.parseInt(codAutorModificar));
-                                            int filasAfectadas = updateNombreStmt.executeUpdate();
-                                            if (filasAfectadas > 0) {
-                                                System.out.println("Nombre actualizado correctamente.");
-                                            } else {
-                                                System.out.println("Error al actualizar el nombre.");
-                                            }
-                                        }
-                                    } else {
-                                        System.out.println("El nombre no puede estar vacío.");
-                                    }
+                                    modificarNombre(scanner, conn, codAutorModificar, "nombre");
                                     break;
 
                                 case "2":
                                     // Modificar apellido
-                                    System.out.print("Introduce el nuevo apellido del autor: ");
-                                    String nuevoApellido = scanner.nextLine().trim();
-                                    if (!nuevoApellido.isEmpty()) {
-                                        String updateApellidoSql = "UPDATE autores SET apellido = ? WHERE cod_autor = ?";
-                                        try (PreparedStatement updateApellidoStmt = conn
-                                                .prepareStatement(updateApellidoSql)) {
-                                            updateApellidoStmt.setString(1, nuevoApellido);
-                                            updateApellidoStmt.setInt(2, Integer.parseInt(codAutorModificar));
-                                            int filasAfectadas = updateApellidoStmt.executeUpdate();
-                                            if (filasAfectadas > 0) {
-                                                System.out.println("Apellido actualizado correctamente.");
-                                            } else {
-                                                System.out.println("Error al actualizar el apellido.");
-                                            }
-                                        }
-                                    } else {
-                                        System.out.println("El apellido no puede estar vacío.");
-                                    }
+                                    modificarNombre(scanner, conn, codAutorModificar, "apellido");
                                     break;
 
                                 case "3":
                                     // Modificar código de país
-                                    System.out.print("Introduce el nuevo código de país: ");
-                                    String codPaisInput = scanner.nextLine().trim();
-                                    if (!codPaisInput.isEmpty() && codPaisInput.matches("\\d+")) {
-                                        String updatePaisSql = "UPDATE autores SET cod_pais = ? WHERE cod_autor = ?";
-                                        try (PreparedStatement updatePaisStmt = conn.prepareStatement(updatePaisSql)) {
-                                            updatePaisStmt.setInt(1, Integer.parseInt(codPaisInput));
-                                            updatePaisStmt.setInt(2, Integer.parseInt(codAutorModificar));
-                                            int filasAfectadas = updatePaisStmt.executeUpdate();
-                                            if (filasAfectadas > 0) {
-                                                System.out.println("Código de país actualizado correctamente.");
-                                            } else {
-                                                System.out.println("Error al actualizar el código de país.");
-                                            }
-                                        }
-                                    } else {
-                                        System.out.println("El código de país debe ser numérico.");
-                                    }
+                                    modificarCodigoPais(scanner, conn, codAutorModificar);
 
                                     break;
 
@@ -481,7 +320,7 @@ public class GestionBibliotecaMuskiz {
                         opcionConsulta = scanner.nextLine().trim();
 
                         if (!opcionConsulta.equals("1") && !opcionConsulta.equals("2")) {
-                        System.out.println("Opción no válida. Por favor elige 1 o 2.");
+                            System.out.println("Opción no válida. Por favor elige 1 o 2.");
                         }
                     } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2"));
 
@@ -497,21 +336,22 @@ public class GestionBibliotecaMuskiz {
                             do {
                                 System.out.print("Introduce el nombre del autor a buscar: ");
                                 nombreAutor = scanner.nextLine().trim();
-                
+
                                 if (nombreAutor.isEmpty() || !nombreAutor.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
                                     System.out.println("Nombre no válido. Debe contener solo letras y no estar vacío.");
                                     nombreAutor = null; // Forzar repetición
                                 }
                             } while (nombreAutor == null);
-                
+
                             if (!consultarAutorPorNombre(connectMySQL(), nombreAutor)) {
                                 System.out.println("No se encontró el autor con el nombre: " + nombreAutor);
                             }
-                            break;                 
+                            break;
 
                         default:
                             break;
                     }
+                    break;
 
                 case "5":
                     System.out.println("\nVolviendo al menú principal...\n");
@@ -553,7 +393,7 @@ public class GestionBibliotecaMuskiz {
         System.out.println("Has elegido: Altas.");
 
         String isbn = validarISBN(scanner);
-        String titulo = validarTitulo(scanner);
+        String titulo = validarNombre(scanner, "título del libro");
         int nCopias = validarNumeroCopias(scanner);
         int valoracion = validarValoracion(scanner);
 
@@ -718,39 +558,55 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
-
-
-    // Consultar tabla Autores filtrando por nombre
-    public static boolean consultarAutorPorNombre(java.sql.Connection conn, String nombreAutor) {
-        String sql = "SELECT * FROM autores WHERE nombre LIKE ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, "%" + nombreAutor + "%");
-            ResultSet rs = stmt.executeQuery();
-            boolean encontrado = false;
-    
-            while (rs.next()) {
-                System.out.println("Código Autor: " + rs.getInt("cod_autor") +
-                                   ", Nombre: " + rs.getString("nombre") +
-                                   ", Apellido: " + rs.getString("apellido") +
-                                   ", País: " + rs.getInt("cod_pais"));
-                encontrado = true;
-            }
-            
-            if (!encontrado) {
-                // No se encontró el autor
-                return false;
-            }
-        } catch (SQLException e) {
-            System.out.println("Error al consultar autor por nombre: " + e.getMessage());
-        }
-        return true; // Si se encontró al menos un autor
-    }
-    
-    
-
-
-
     // Alta tabla Autores
+    private static void agregarAutor(Scanner scanner) {
+        System.out.println("Has elegido: Altas.");
+        String nombre = validarNombre(scanner, "nombre del autor");
+        String apellido = validarNombre(scanner, "apellido del autor");
+
+        // Generar cod_autor aleatorio y comprobar que no exista
+        int codAutor;
+        boolean codUnico = false;
+
+        try (Connection conn = connectMySQL()) {
+
+            do {
+                codAutor = generarCodigo(99999);
+
+                // Verificar unicidad del cod_autor
+                String checkSql = "SELECT COUNT(*) FROM autores WHERE cod_autor = ?";
+                try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                    checkStmt.setInt(1, codAutor);
+                    ResultSet rs = checkStmt.executeQuery();
+                    if (rs.next() && rs.getInt(1) == 0) {
+                        codUnico = true;
+                    }
+                }
+            } while (!codUnico);
+
+            int codPais = generarCodigo(3);
+
+            // Insertar el autor
+            String sql = "INSERT INTO autores (cod_autor, nombre, apellido, cod_pais) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, codAutor);
+                stmt.setString(2, nombre);
+                stmt.setString(3, apellido);
+                stmt.setInt(4, codPais);
+
+                int filasAfectadas = stmt.executeUpdate();
+                if (filasAfectadas > 0) {
+                    System.out.println("Autor agregado correctamente con ID: " + codAutor);
+                } else {
+                    System.out.println("Error al agregar autor.");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
 
     // Borrar autor (baja)
     public static boolean borrarAutor(Connection conn, String codAutorBaja) {
@@ -777,7 +633,53 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
-    // Modificar numero de copias tabla Autores
+    // Modificar nombre/apellido tabla Autores
+    private static void modificarNombre(Scanner scanner, Connection conn, String codAutorModificar, String tipo) {
+        System.out.print("Introduce el nuevo " + tipo + " del autor: ");
+        String nuevoNombre = scanner.nextLine().trim();
+        if (!nuevoNombre.isEmpty()) {
+            String updateNombreSql = "UPDATE autores SET " + tipo + " = ? WHERE cod_autor = ?";
+            try (PreparedStatement updateNombreStmt = conn.prepareStatement(updateNombreSql)) {
+                updateNombreStmt.setString(1, nuevoNombre);
+                updateNombreStmt.setInt(2, Integer.parseInt(codAutorModificar));
+                int filasAfectadas = updateNombreStmt.executeUpdate();
+                if (filasAfectadas > 0) {
+                    System.out.println("El " + tipo + " ha sido actualizado correctamente.");
+                } else {
+                    System.out.println("Error al actualizar el " + tipo + ".");
+                }
+            } catch (SQLException e) {
+                System.out.println("Error al actualizar el " + tipo + ":");
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("El " + tipo + " no puede estar vacío.");
+        }
+    }
+
+    // Modificar codigo pais tabla Autores
+    private static void modificarCodigoPais(Scanner scanner, Connection conn, String codAutorModificar) {
+        System.out.print("Introduce el nuevo código de país: ");
+        String codPaisInput = scanner.nextLine().trim();
+        if (!codPaisInput.isEmpty() && codPaisInput.matches("\\d+")) {
+            String updatePaisSql = "UPDATE autores SET cod_pais = ? WHERE cod_autor = ?";
+            try (PreparedStatement updatePaisStmt = conn.prepareStatement(updatePaisSql)) {
+                updatePaisStmt.setInt(1, Integer.parseInt(codPaisInput));
+                updatePaisStmt.setInt(2, Integer.parseInt(codAutorModificar));
+                int filasAfectadas = updatePaisStmt.executeUpdate();
+                if (filasAfectadas > 0) {
+                    System.out.println("Código de país actualizado correctamente.");
+                } else {
+                    System.out.println("Error al actualizar el código de país.");
+                }
+            } catch (SQLException e) {
+                System.out.println("Error al actualizar el código de país:");
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("El código de país debe ser numérico.");
+        }
+    }
 
     // Consultar tabla Autores
     public static void consultarAutores(Connection conn, int totalRegistros) {
@@ -786,7 +688,7 @@ public class GestionBibliotecaMuskiz {
         // En caso de ser 0, muestra todo
         Statement stm = null;
         ResultSet rs = null;
-        String sql = "SELECT * FROM AUTORES";
+        String sql = "SELECT * FROM autores";
         String cod_autor, nombre, apellido;
 
         try {
@@ -808,7 +710,33 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
-    // Validadores para la tabla Libros
+    // Consultar tabla Autores filtrando por nombre
+    public static boolean consultarAutorPorNombre(Connection conn, String nombreAutor) {
+        String sql = "SELECT * FROM autores WHERE nombre LIKE ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, "%" + nombreAutor + "%");
+            ResultSet rs = stmt.executeQuery();
+            boolean encontrado = false;
+
+            while (rs.next()) {
+                System.out.println("Código Autor: " + rs.getInt("cod_autor") +
+                        ", Nombre: " + rs.getString("nombre") +
+                        ", Apellido: " + rs.getString("apellido") +
+                        ", País: " + rs.getInt("cod_pais"));
+                encontrado = true;
+            }
+
+            if (!encontrado) {
+                // No se encontró el autor
+                return false;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al consultar autor por nombre: " + e.getMessage());
+        }
+        return true; // Si se encontró al menos un autor
+    }
+
+    /// Validadores ///
     // Validar ISBN: exactamente 13 dígitos numéricos
     private static String validarISBN(Scanner scanner) {
         String isbn;
@@ -822,17 +750,17 @@ public class GestionBibliotecaMuskiz {
         return isbn;
     }
 
-    // Validar título: no vacío y no solo numérico
-    private static String validarTitulo(Scanner scanner) {
-        String titulo;
+    // Validar nombre: no vacío y no solo numérico
+    private static String validarNombre(Scanner scanner, String tipo) {
+        String nombre;
         do {
-            System.out.print("Introduce el título del libro: ");
-            titulo = scanner.nextLine().trim();
-            if (titulo.isEmpty() || titulo.matches("\\d+")) {
-                System.out.println("El título no puede estar vacío y no puede ser solo números.");
+            System.out.print("Introduce el " + tipo + ": ");
+            nombre = scanner.nextLine().trim();
+            if (nombre.isEmpty() || nombre.matches("\\d+")) {
+                System.out.println("El " + tipo + " no puede estar vacío y no puede ser solo números.");
             }
-        } while (titulo.isEmpty() || titulo.matches("\\d+"));
-        return titulo;
+        } while (nombre.isEmpty() || nombre.matches("\\d+"));
+        return nombre;
     }
 
     // Validar número de copias: numérico y positivo
@@ -871,5 +799,46 @@ public class GestionBibliotecaMuskiz {
             }
         } while (valoracion == 0);
         return valoracion;
+    }
+
+    // Validar codigo: numerico y exista
+    private static String validarCodigo(Scanner scanner) {
+        String codAutorModificar = "";
+        boolean autorValido = false;
+
+        // Bucle para solicitar el código del autor hasta que sea válido
+        while (!autorValido) {
+            System.out.print("Introduce el código del autor a modificar: ");
+            codAutorModificar = scanner.nextLine().trim();
+
+            // Validar que el código no esté vacío y sea numérico
+            if (codAutorModificar.isEmpty()) {
+                System.out.println("El código no puede estar vacío.");
+            } else if (!codAutorModificar.matches("\\d+")) {
+                System.out.println("El código debe ser numérico.");
+            } else {
+                // Conectar a la base de datos
+                try (Connection conn = connectMySQL()) {
+                    // Verificar si el autor existe
+                    String checkSql = "SELECT * FROM autores WHERE cod_autor = ?";
+                    try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                        checkStmt.setInt(1, Integer.parseInt(codAutorModificar));
+                        ResultSet rs = checkStmt.executeQuery();
+
+                        if (rs.next()) {
+                            autorValido = true; // Autor encontrado, salir del bucle
+                        } else {
+                            System.out.println(
+                                    "No se encontró un autor con el código proporcionado. Inténtalo de nuevo.");
+                        }
+                    }
+                } catch (SQLException e) {
+                    System.out.println("Error de conexión o SQL:");
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return codAutorModificar; // Retorna el código del autor si es válido
     }
 }
