@@ -187,6 +187,9 @@ public class GestionBibliotecaMuskiz {
 
                 case "2":
                     System.out.println("Has elegido: Bajas.");
+
+                    Connection conn = connectMySQL();
+                    
                     // Aquí iría la lógica para bajas
                     System.out.println("Introduce el código del autor a eliminar: ");
                     String codAutorBaja = scanner.nextLine().trim();
