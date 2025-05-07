@@ -348,7 +348,23 @@ public class GestionBibliotecaMuskiz {
 
                 case "2":
                     System.out.println("Has elegido: Bajas.");
-                    // Aquí iría la lógica para bajas
+                    
+                    System.out.print("Introduce el ISBN del libro a eliminar: ");
+                    String codLibroBaja = scanner.nextLine();
+                    // Validar que el código no esté vacío y sea numérico
+                    if (codLibroBaja.isEmpty()) {
+                        System.out.println("El código no puede estar vacío.");
+                    } else if (!codLibroBaja.matches("\\d+")) {
+                        System.out.println("El código debe ser numérico.");
+                    } else {
+                        // Llamar a la función de baja
+                        boolean resultado = borrarLibro(connectMySQL(), codLibroBaja);
+                        if (resultado) {
+                            System.out.println("Libro eliminado correctamente.");
+                        } else {
+                            System.out.println("Error al eliminar el libro.");
+                        }
+                    }
 
                     break; // Se queda en el submenú para seguir eligiendo
 
@@ -470,7 +486,7 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
-    // Borrar usuario (baja)
+    // Borrar autor (baja)
     public static boolean borrarAutor(Connection conn, String codAutorBaja) {
         Statement st;
         int borrados;
@@ -481,7 +497,22 @@ public class GestionBibliotecaMuskiz {
             return (borrados > 0);
         } catch (Exception e) {
             System.out
-                    .println("Problema al borrar: " + "\n" + ((SQLException) e).getErrorCode() + " " + e.getMessage());
+                    .println("Problema al borrar: " + "\n" + e.getMessage());
+            return false;
+        }
+    }
+
+    // Borrar libro (baja)
+    public static boolean borrarLibro(Connection conn, String codLibroBaja) {
+        Statement st;
+        int borrados;
+        String sql = "DELETE FROM libros WHERE cod_libro= " + codLibroBaja;
+        try {
+            st = conn.createStatement();
+            borrados = st.executeUpdate(sql);
+            return (borrados > 0);
+        } catch (Exception e) {
+            System.out.println("Problema al borrar: " + "\n" + e.getMessage());
             return false;
         }
     }
@@ -493,10 +524,10 @@ public class GestionBibliotecaMuskiz {
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 System.out.println("Código: " + rs.getInt("cod_libro") +
-                                   ", ISBN: " + rs.getString("isbn") +
-                                   ", Título: " + rs.getString("titulo") +
-                                   ", Copias: " + rs.getInt("n_copias") +
-                                   ", Valoración: " + rs.getInt("valoracion"));
+                                ", ISBN: " + rs.getString("isbn") +
+                                ", Título: " + rs.getString("titulo") +
+                                ", Copias: " + rs.getInt("n_copias") +
+                                ", Valoración: " + rs.getInt("valoracion"));
             }
         } catch (SQLException e) {
             System.out.println("Error al consultar por ISBN: " + e.getMessage());
