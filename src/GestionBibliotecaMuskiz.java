@@ -415,4 +415,19 @@ public class GestionBibliotecaMuskiz {
             System.out.println("\nProblema al consultar: " + "\n" + sql + "\n" + e.getErrorCode() + " " + e.getMessage());
         }
     }
+    
+    // Borrar usuario (baja)
+    public static boolean borrarUsuario(Connection conn, String cod) {
+        Statement st;
+        int borrados;
+        String sql = "DELETE FROM USUARIOS WHERE USUCOD= cod_usuario";
+        try {
+            st = conn.createStatement();
+            borrados = st.executeUpdate(sql);
+            return (borrados > 0);
+        } catch (Exception e) {
+            System.out.println("Problema al borrar: " + "\n" + ((SQLException) e).getErrorCode() + " " + e.getMessage());
+            return false;
+        }
+    }
 }
