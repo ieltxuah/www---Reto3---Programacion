@@ -481,7 +481,7 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Bajas.");
 
-                    System.out.print("Introduce el ISBN del libro a eliminar: ");
+                    System.out.print("Introduce el código del libro a eliminar: ");
                     String codLibroBaja = scanner.nextLine().trim();
                     // Validar que el código no esté vacío y sea numérico
                     if (codLibroBaja.isEmpty()) {
@@ -645,15 +645,28 @@ public class GestionBibliotecaMuskiz {
 
     // Borrar libro (baja)
     public static boolean borrarLibro(Connection conn, String codLibroBaja) {
+        PreparedStatement pstmt = null;
+        int borrados;
         String sql = "DELETE FROM libros WHERE cod_libro = ?";
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setString(1, codLibroBaja);
-            int borrados = pst.executeUpdate();
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, codLibroBaja); // Set the value for the placeholder
+            borrados = pstmt.executeUpdate();
             return (borrados > 0);
-        } catch (SQLException e) {
-            System.out.println("Problema al borrar:\n" + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Problema al borrar: " + "\n" + e.getMessage());
             return false;
+        } /* finally {
+            // Close the PreparedStatement to free resources
+            if (pstmt != null) {
+                try {
+                    pstmt.close();
+                } catch (SQLException e) {
+                    System.out.println("Error closing PreparedStatement: " + e.getMessage());
+                }
+            }
         }
+        */
     }
 
     public static void consultarLibroPorISBN(Connection conn, String isbn) {
