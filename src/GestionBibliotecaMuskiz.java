@@ -188,18 +188,23 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Bajas.");
                     // Aquí iría la lógica para bajas
-                    System.out.println("Inserte código de autor para dar de baja: ");
-                    String codAutorBaja = scanner.nextLine();
-                    Connection conn = connectMySQL();
-                    if (conn != null) {
-                        if (borrarUsuario(conn, codAutorBaja)) {
-                            System.out.println("Autor dado de baja correctamente.");
-                        } else {
-                            System.out.println("Error al dar de baja el autor.");
-                        }
+                    System.out.println("Introduce el código del autor a eliminar: ");
+                    String codAutorBaja = scanner.nextLine().trim();
+                    // Validar que el código no esté vacío y sea numérico
+                    if (codAutorBaja.isEmpty()) {
+                        System.out.println("El código no puede estar vacío.");
+                    } else if (!codAutorBaja.matches("\\d+")) {
+                        System.out.println("El código debe ser numérico.");
                     } else {
-                        System.out.println("No se pudo conectar a la base de datos para dar de baja el autor.");
+                        // Llamar a la función de baja
+                        boolean resultado = borrarUsuario(connectMySQL(), codAutorBaja);
+                        if (resultado) {
+                            System.out.println("Autor eliminado correctamente.");
+                        } else {
+                            System.out.println("Error al eliminar el autor.");
+                        }
                     }
+                    
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "3":
