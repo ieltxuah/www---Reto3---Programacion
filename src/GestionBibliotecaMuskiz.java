@@ -350,7 +350,7 @@ public class GestionBibliotecaMuskiz {
                     System.out.println("Has elegido: Bajas.");
                     
                     System.out.print("Introduce el ISBN del libro a eliminar: ");
-                    String codLibroBaja = scanner.nextLine();
+                    String codLibroBaja = scanner.nextLine().trim();
                     // Validar que el código no esté vacío y sea numérico
                     if (codLibroBaja.isEmpty()) {
                         System.out.println("El código no puede estar vacío.");
@@ -365,6 +365,7 @@ public class GestionBibliotecaMuskiz {
                             System.out.println("Error al eliminar el libro.");
                         }
                     }
+                    
 
                     break; // Se queda en el submenú para seguir eligiendo
 
@@ -504,18 +505,17 @@ public class GestionBibliotecaMuskiz {
 
     // Borrar libro (baja)
     public static boolean borrarLibro(Connection conn, String codLibroBaja) {
-        Statement st;
-        int borrados;
-        String sql = "DELETE FROM libros WHERE cod_libro= " + codLibroBaja;
-        try {
-            st = conn.createStatement();
-            borrados = st.executeUpdate(sql);
+        String sql = "DELETE FROM libros WHERE cod_libro = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setString(1, codLibroBaja);
+            int borrados = pst.executeUpdate();
             return (borrados > 0);
-        } catch (Exception e) {
-            System.out.println("Problema al borrar: " + "\n" + e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Problema al borrar:\n" + e.getMessage());
             return false;
         }
     }
+    
 
     public static void consultarLibroPorISBN(Connection conn, String isbn) {
         String sql = "SELECT * FROM libros WHERE isbn = ?";
