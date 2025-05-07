@@ -449,7 +449,7 @@ public class GestionBibliotecaMuskiz {
     public static boolean borrarUsuario(Connection conn, String codAutorBaja) {
         Statement st;
         int borrados;
-        String sql = "DELETE FROM USUARIOS WHERE cod_autor= ?";
+        String sql = "DELETE FROM USUARIOS WHERE cod_autor= " + codAutorBaja;
         try {
             st = conn.createStatement();
             borrados = st.executeUpdate(sql);
