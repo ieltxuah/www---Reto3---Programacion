@@ -141,8 +141,8 @@ public class GestionBibliotecaMuskiz {
                     boolean codUnico = false;
 
                     String url = "jdbc:mysql://localhost:3306/www";
-                    String usuario = "root";
-                    String password = "";
+                    String usuario = "www";
+                    String password = "www";
 
                     try (Connection conn = DriverManager.getConnection(url, usuario, password)) {
 
@@ -249,7 +249,7 @@ public class GestionBibliotecaMuskiz {
                     Scanner sc = new Scanner(System.in);
                     String isbn, titulo;
                     int nCopias = 0, valoracion = 0;
-                    
+
                     // Validar ISBN: exactamente 13 dígitos numéricos
                     do {
                         System.out.print("Introduce el ISBN del libro (13 dígitos): ");
@@ -261,7 +261,7 @@ public class GestionBibliotecaMuskiz {
                             isbn = "";
                         }
                     } while (isbn.isEmpty());
-                    
+
                     // Validar título: no vacío y no solo numérico
                     do {
                         System.out.print("Introduce el título del libro: ");
@@ -273,7 +273,7 @@ public class GestionBibliotecaMuskiz {
                             titulo = "";
                         }
                     } while (titulo.isEmpty());
-                    
+
                     // Validar número de copias: numérico y positivo
                     do {
                         System.out.print("Introduce el número de copias: ");
@@ -288,7 +288,7 @@ public class GestionBibliotecaMuskiz {
                             System.out.println("Ingresa un número válido.");
                         }
                     } while (nCopias == 0);
-                    
+
                     // Validar valoración: entre 1 y 5
                     do {
                         System.out.print("Introduce la valoración (1 a 5): ");
@@ -303,20 +303,20 @@ public class GestionBibliotecaMuskiz {
                             System.out.println("Ingresa un número válido.");
                         }
                     } while (valoracion == 0);
-                    
+
                     // Generar cod_libro aleatorio único
                     int codLibro;
                     boolean codUnico = false;
-                    
+
                     String url = "jdbc:mysql://localhost:3306/www";
-                    String usuario = "root";
-                    String password = "";
-                    
+                    String usuario = "www";
+                    String password = "www";
+
                     try (Connection conn = DriverManager.getConnection(url, usuario, password)) {
-                    
+
                         do {
-                            codLibro = (int)(Math.random() * 900) + 100;
-                    
+                            codLibro = generarCodigo(99999999);
+
                             String checkSql = "SELECT COUNT(*) FROM libros WHERE cod_libro = ?";
                             try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
                                 checkStmt.setInt(1, codLibro);
@@ -326,7 +326,7 @@ public class GestionBibliotecaMuskiz {
                                 }
                             }
                         } while (!codUnico);
-                    
+
                         // Insertar libro
                         String sql = "INSERT INTO libros (cod_libro, isbn, titulo, n_copias, valoracion) VALUES (?, ?, ?, ?, ?)";
                         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -335,7 +335,7 @@ public class GestionBibliotecaMuskiz {
                             stmt.setString(3, titulo);
                             stmt.setInt(4, nCopias);
                             stmt.setInt(5, valoracion);
-                    
+
                             int filas = stmt.executeUpdate();
                             if (filas > 0) {
                                 System.out.println("Libro agregado correctamente con código: " + codLibro);
@@ -343,18 +343,18 @@ public class GestionBibliotecaMuskiz {
                                 System.out.println("Error al insertar el libro.");
                             }
                         }
-                    
+
                     } catch (SQLException e) {
                         System.out.println("Error de conexión o SQL:");
                         e.printStackTrace();
                     }
-                    
+
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "2":
                     System.out.println("Has elegido: Bajas.");
                     // Aquí iría la lógica para bajas
-                    
+
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "3":
@@ -379,7 +379,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     /// FUNCIONES ///
-    
+
     // Consultar tabla Libros
     public static void consultarLibros(Connection conn, int totalRegistros) {
         // Realizamos la consulta sql para mostrar todos los datos de la tabla
@@ -400,12 +400,15 @@ public class GestionBibliotecaMuskiz {
                 isbn = rs.getString("ISBN");
                 titulo = rs.getString("titulo");
                 System.out.println(cod_libro + " | " + isbn + " | " + titulo);
-                if (cont > totalRegistros && totalRegistros !=0) break;
+                if (cont > totalRegistros && totalRegistros != 0)
+                    break;
             }
         } catch (SQLException e) {
-            System.out.println("\nProblema al consultar: " + "\n" + sql + "\n" + e.getErrorCode() + " " + e.getMessage());
+            System.out
+                    .println("\nProblema al consultar: " + "\n" + sql + "\n" + e.getErrorCode() + " " + e.getMessage());
         }
     }
+
     // Consultar tabla Autores
     public static void consultarAutores(Connection conn, int totalRegistros) {
         // Realizamos la consulta sql para mostrar todos los datos de la tabla
@@ -426,13 +429,15 @@ public class GestionBibliotecaMuskiz {
                 nombre = rs.getString("nombre");
                 apellido = rs.getString("apellido");
                 System.out.println(cod_autor + " | " + nombre + " | " + apellido);
-                if (cont > totalRegistros && totalRegistros !=0) break;
+                if (cont > totalRegistros && totalRegistros != 0)
+                    break;
             }
         } catch (SQLException e) {
-            System.out.println("\nProblema al consultar: " + "\n" + sql + "\n" + e.getErrorCode() + " " + e.getMessage());
+            System.out
+                    .println("\nProblema al consultar: " + "\n" + sql + "\n" + e.getErrorCode() + " " + e.getMessage());
         }
     }
-    
+
     // Borrar usuario (baja)
     public static boolean borrarUsuario(Connection conn, String codAutorBaja) {
         Statement st;
@@ -443,7 +448,8 @@ public class GestionBibliotecaMuskiz {
             borrados = st.executeUpdate(sql);
             return (borrados > 0);
         } catch (Exception e) {
-            System.out.println("Problema al borrar: " + "\n" + ((SQLException) e).getErrorCode() + " " + e.getMessage());
+            System.out
+                    .println("Problema al borrar: " + "\n" + ((SQLException) e).getErrorCode() + " " + e.getMessage());
             return false;
         }
     }
