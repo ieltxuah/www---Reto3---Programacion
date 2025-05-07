@@ -364,7 +364,43 @@ public class GestionBibliotecaMuskiz {
 
                 case "4":
                     System.out.println("Has elegido: Consulta de datos.");
-                    // Aquí iría la lógica para consultar datos
+                    String opcionConsulta;
+                    do {
+                        System.out.println("\n--- CONSULTAR LIBROS ---");
+                        System.out.println("1. Todos los datos");
+                        System.out.println("2. Filtrar por ISBN");
+                        System.out.print("Elige una opción (1 o 2): ");
+                        opcionConsulta = scanner.nextLine().trim();
+                    
+                        if (!opcionConsulta.equals("1") && !opcionConsulta.equals("2")) {
+                            System.out.println("Opción no válida. Por favor elige 1 o 2.");
+                        }
+                    } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2"));
+                    
+                    // Leer opción usuario
+                    switch (opcionConsulta) {
+                        case "1":
+                        
+                            // Consulta todos los libros
+                            consultarLibros(connectMySQL(), 0);
+                        break;
+                        case "2":
+                        String isbnBuscar;
+                        do {
+                            System.out.print("Introduce el ISBN a buscar (13 dígitos): ");
+                            isbnBuscar = scanner.nextLine().trim();
+                
+                            if (!isbnBuscar.matches("\\d{13}")) {
+                                System.out.println("ISBN no válido. Debe contener exactamente 13 dígitos.");
+                            }
+                        } while (!isbnBuscar.matches("\\d{13}"));
+                
+                        consultarLibroPorISBN(connectMySQL(), isbnBuscar);
+                        break;
+                    
+                        default:
+                            break;
+                    }
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "5":
@@ -453,4 +489,22 @@ public class GestionBibliotecaMuskiz {
             return false;
         }
     }
+
+    public static void consultarLibroPorISBN(Connection conn, String isbn) {
+        String sql = "SELECT * FROM libros WHERE isbn = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, isbn);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                System.out.println("Código: " + rs.getInt("cod_libro") +
+                                   ", ISBN: " + rs.getString("isbn") +
+                                   ", Título: " + rs.getString("titulo") +
+                                   ", Copias: " + rs.getInt("n_copias") +
+                                   ", Valoración: " + rs.getInt("valoracion"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al consultar por ISBN: " + e.getMessage());
+        }
+    }
+    
 }
