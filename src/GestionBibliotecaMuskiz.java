@@ -8,6 +8,7 @@ import java.sql.Statement;
 
 public class GestionBibliotecaMuskiz {
     public static void main(String[] args) throws Exception {
+        System.out.print("\033[H\033[2J");
         Connection conn = connectMySQL();
         if (conn != null) {
 
