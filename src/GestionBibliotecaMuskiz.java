@@ -106,12 +106,7 @@ public class GestionBibliotecaMuskiz {
                     String codLibroBaja = validarISBN(scanner);
 
                     try (Connection conn = connectMySQL()) {
-                        boolean resultado = borrarLibro(conn, codLibroBaja);
-                        if (resultado) {
-                            System.out.println("Libro eliminado correctamente.");
-                        } else {
-                            System.out.println("Error al eliminar el libro.");
-                        }
+                        borrarLibro(conn, codLibroBaja);
                     } catch (SQLException e) {
                         System.out.println("Error de conexión o SQL:");
                         e.printStackTrace();
@@ -266,12 +261,7 @@ public class GestionBibliotecaMuskiz {
                         System.out.println("El código debe ser numérico.");
                     } else {
                         // Llamar a la función de baja
-                        boolean resultado = borrarAutor(connectMySQL(), codAutorBaja);
-                        if (resultado) {
-                            System.out.println("Autor eliminado correctamente.");
-                        } else {
-                            System.out.println("Error al eliminar el autor.");
-                        }
+                        borrarAutor(connectMySQL(), codAutorBaja);
                     }
 
                     break; // Se queda en el submenú para seguir eligiendo
@@ -403,45 +393,44 @@ public class GestionBibliotecaMuskiz {
             switch (opcionPrestamo) {
                 case "1":
                     System.out.println("Has elegido: Prestar Libro.");
-                    
+
                     // Mantener la conexión abierta para el menú de prestar libros
-                        boolean consultaPrestamo = true;
+                    boolean consultaPrestamo = true;
 
-                        // Validar inicio de sesión de usuario
-                        if (validarInicioSesion(scanner)) {
-                            while (consultaPrestamo) {
-                                System.out.println("\n--- Menú de Préstamos ---");
-                                System.out.println("1. Realizar préstamo.");
-                                System.out.println("2. Regresar al menú anterior");
-                                System.out.print("Seleccione una opción: ");
+                    // Validar inicio de sesión de usuario
+                    if (validarInicioSesion(scanner)) {
+                        while (consultaPrestamo) {
+                            System.out.println("\n--- Menú de Préstamos ---");
+                            System.out.println("1. Realizar préstamo.");
+                            System.out.println("2. Regresar al menú anterior");
+                            System.out.print("Seleccione una opción: ");
 
-                                String opcionConsultar = scanner.nextLine().trim();
+                            String opcionConsultar = scanner.nextLine().trim();
 
-                                switch (opcionConsultar) {
-                                    case "1":
-                                        // Realizar préstamo
-                                        String codLibro = validarISBN(scanner);
-                                        String nombreUsuario = validarNombre(scanner, "nombre del usuario");
-                                        realizarPrestamo(connectMySQL(), codLibro, nombreUsuario);
-                                        break;
-                                
-                                    case "2":
-                                        // Regresar al menú anterior
-                                        consultaPrestamo = false;
-                                        break;
+                            switch (opcionConsultar) {
+                                case "1":
+                                    // Realizar préstamo
+                                    String codLibro = validarISBN(scanner);
+                                    String nombreUsuario = validarNombre(scanner, "nombre del usuario");
+                                    realizarPrestamo(connectMySQL(), codLibro, nombreUsuario);
+                                    break;
 
-                                    default:
-                                        System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
-                                        break;
-                                }
+                                case "2":
+                                    // Regresar al menú anterior
+                                    consultaPrestamo = false;
+                                    break;
+
+                                default:
+                                    System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
+                                    break;
                             }
+                        }
                     }
                     break;
-                
-                
+
                 case "2":
                     System.out.println("Has elegido: Devolver Libro.");
-                    
+
                     boolean consulatrDevolucion = true;
 
                     // Validar inicio de sesión de usuario
@@ -460,7 +449,7 @@ public class GestionBibliotecaMuskiz {
                                     String codLibro = validarISBN(scanner);
                                     realizarDevolucion(connectMySQL(), codLibro);
                                     break;
-                            
+
                                 case "2":
                                     // Regresar al menú anterior
                                     consulatrDevolucion = false;
@@ -474,7 +463,7 @@ public class GestionBibliotecaMuskiz {
                     }
 
                     break;
-                
+
                 case "3":
                     System.out.println("Has elegido: Consultar tus Préstamos.");
 
@@ -494,29 +483,33 @@ public class GestionBibliotecaMuskiz {
 
                                 switch (opcionConsultar) {
                                     case "1":
-                                    String nombreUsuario;
+                                        String nombreUsuario;
                                         do {
                                             System.out.println("Introduce el nombre de usuario: ");
                                             nombreUsuario = scanner.nextLine().trim();
-                                            
-                                            if (nombreUsuario.isEmpty() || !nombreUsuario.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
-                                                System.out.println("Nombre no válido. Debe contener solo letras y no estar vacío.");
+
+                                            if (nombreUsuario.isEmpty()
+                                                    || !nombreUsuario.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
+                                                System.out.println(
+                                                        "Nombre no válido. Debe contener solo letras y no estar vacío.");
                                                 nombreUsuario = null; // Forzar repetición
                                             }
                                         } while (nombreUsuario == null);
-                                            
+
                                         if (!consultarPrestamosUsuario(conn, nombreUsuario)) {
-                                            System.out.println("No se encontró el autor con el nombre: " + nombreUsuario);
+                                            System.out
+                                                    .println("No se encontró el autor con el nombre: " + nombreUsuario);
                                         }
                                         break;
-                                
+
                                     case "4":
                                         // Regresar al menú anterior
                                         consultaPrestamos = false;
                                         break;
 
                                     default:
-                                        System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
+                                        System.out
+                                                .println("Opción no válida. Por favor, seleccione una opción válida.");
                                         break;
                                 }
                             }
@@ -528,7 +521,7 @@ public class GestionBibliotecaMuskiz {
                         e.printStackTrace();
                     }
                     break;
-                
+
                 case "4":
                     System.out.println("Has elegido: Consultar Disponibilidad de Libros.");
                     boolean consultaDisponibilidad = true;
@@ -547,7 +540,7 @@ public class GestionBibliotecaMuskiz {
                                 case "1":
                                     consultarDisponibilidadLibros(connectMySQL());
                                     break;
-                            
+
                                 case "4":
                                     // Regresar al menú anterior
                                     consultaDisponibilidad = false;
@@ -559,7 +552,6 @@ public class GestionBibliotecaMuskiz {
                             }
                         }
                     }
-                    
 
                     break;
 
@@ -652,6 +644,24 @@ public class GestionBibliotecaMuskiz {
         return cod;
     }
 
+    // Obtener codigo de libro a partir de isbn
+    private static int obtenerCodLibroPorIsbn(String isbn) {
+        String sql = "SELECT cod_libro FROM libros WHERE isbn = ?";
+        try (Connection conn = connectMySQL()) {
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, isbn);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    return rs.getInt("cod_libro");
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
     // Alta tabla Libros
     private static void agregarLibro(Scanner scanner) {
         System.out.println("Has elegido: Altas.");
@@ -739,15 +749,126 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Borrar libro (baja)
-    public static boolean borrarLibro(Connection conn, String codLibroBaja) {
-        String sql = "DELETE FROM libros WHERE isbn = ?";
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setString(1, codLibroBaja);
-            int borrados = pst.executeUpdate();
-            return (borrados > 0);
+    public static void borrarLibro(Connection conn, String codLibroBaja) {
+        int codLibro = obtenerCodLibroPorIsbn(codLibroBaja);
+        if (codLibro == -1) {
+            System.out.println("No se encontró el libro con ISBN: " + codLibroBaja);
+        } else {
+
+            int ejemplaresPrestados = comprobarEjemplaresPrestados(codLibro);
+
+            if (ejemplaresPrestados == 0) {
+                // No hay ejemplares prestados, borrar todos los registros
+                borrarPrestamos(codLibro);
+                borrarEjemplares(codLibro);
+                borrarLibroPorIsbn(codLibroBaja);
+                System.out.println("Se han borrado todos los registros del libro con ISBN: " + codLibroBaja);
+            } else {
+                // Hay ejemplares prestados, borrar solo los ejemplares no prestados
+                borrarPrestamosDevueltos(codLibro);
+                borrarEjemplaresDevueltos(codLibro);
+                actualizarNumeroCopias(codLibro);
+                System.out.println("Se han borrado algunos ejemplares del libro con ISBN: " + codLibroBaja
+                        + ", pero hay ejemplares prestados.");
+            }
+        }
+    }
+
+    // Borrar prestamos
+    private static void borrarPrestamos(int codLibro) {
+        String deletePrestamosSql = "DELETE FROM prestamos WHERE cod_ejemplar IN (SELECT cod_ejemplar FROM ejemplares WHERE cod_libro = ?)";
+        try (Connection conn = connectMySQL()) {
+            try (PreparedStatement deletePrestamosStmt = conn.prepareStatement(deletePrestamosSql)) {
+                deletePrestamosStmt.setInt(1, codLibro);
+                deletePrestamosStmt.executeUpdate();
+            }
         } catch (SQLException e) {
-            System.out.println("Problema al borrar:\n" + e.getMessage());
-            return false;
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
+
+    // Borrar prestamos que ya han sido devueltos de un mismo ejemplar, en el caso
+    // que haya uno no devuelto, no los borra
+    private static void borrarPrestamosDevueltos(int codLibro) {
+        String deletePrestamosSql = "DELETE FROM prestamos \n" + //
+                "WHERE cod_ejemplar IN (\n" + //
+                "    SELECT cod_ejemplar FROM (\n" + //
+                "        SELECT cod_ejemplar \n" + //
+                "        FROM ejemplares \n" + //
+                "        WHERE cod_libro = ? \n" + //
+                "          AND cod_ejemplar NOT IN (\n" + //
+                "              SELECT cod_ejemplar \n" + //
+                "              FROM prestamos \n" + //
+                "              WHERE fecha_devolucion IS NULL\n" + //
+                "          )\n" + //
+                "    ) AS temp\n" + //
+                ")";
+        try (Connection conn = connectMySQL()) {
+            try (PreparedStatement deletePrestamosStmt = conn.prepareStatement(deletePrestamosSql)) {
+                deletePrestamosStmt.setInt(1, codLibro);
+                deletePrestamosStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
+
+    // Borrar ejemplares
+    private static void borrarEjemplares(int codLibro) {
+        String deleteEjemplaresSql = "DELETE FROM ejemplares WHERE cod_libro = ?";
+        try (Connection conn = connectMySQL()) {
+            try (PreparedStatement deleteEjemplaresStmt = conn.prepareStatement(deleteEjemplaresSql)) {
+                deleteEjemplaresStmt.setInt(1, codLibro);
+                deleteEjemplaresStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
+
+    // Borrar ejemplares devueltos
+    private static void borrarEjemplaresDevueltos(int codLibro) {
+        String deleteEjemplaresSql = "DELETE FROM ejemplares WHERE cod_libro = ? AND cod_ejemplar NOT IN (SELECT cod_ejemplar FROM prestamos WHERE fecha_devolucion IS NULL)";
+        try (Connection conn = connectMySQL()) {
+            try (PreparedStatement deleteEjemplaresStmt = conn.prepareStatement(deleteEjemplaresSql)) {
+                deleteEjemplaresStmt.setInt(1, codLibro);
+                deleteEjemplaresStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
+
+    // Borrar libro por isbn
+    private static void borrarLibroPorIsbn(String isbn) {
+        String deleteLibrosSql = "DELETE FROM libros WHERE isbn = ?";
+        try (Connection conn = connectMySQL()) {
+            try (PreparedStatement deleteLibrosStmt = conn.prepareStatement(deleteLibrosSql)) {
+                deleteLibrosStmt.setString(1, isbn);
+                deleteLibrosStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
+
+    // Actualizar numero de copias de la tabla Libros
+    private static void actualizarNumeroCopias(int codLibro) {
+        String updateLibrosSql = "UPDATE libros SET n_copias = (SELECT COUNT(*) FROM ejemplares WHERE cod_libro = ?) WHERE cod_libro = ?";
+        try (Connection conn = connectMySQL()) {
+            try (PreparedStatement updateLibrosStmt = conn.prepareStatement(updateLibrosSql)) {
+                updateLibrosStmt.setInt(1, codLibro);
+                updateLibrosStmt.setInt(2, codLibro);
+                updateLibrosStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
         }
     }
 
@@ -932,21 +1053,12 @@ public class GestionBibliotecaMuskiz {
         String sql = "DELETE FROM autores WHERE cod_autor = ?";
         try {
             pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, codAutorBaja); // Set the value for the placeholder
+            pstmt.setString(1, codAutorBaja);
             borrados = pstmt.executeUpdate();
             return (borrados > 0);
         } catch (Exception e) {
             System.out.println("Problema al borrar: " + "\n" + e.getMessage());
             return false;
-        } finally {
-            // Close the PreparedStatement to free resources
-            if (pstmt != null) {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    System.out.println("Error closing PreparedStatement: " + e.getMessage());
-                }
-            }
         }
     }
 
@@ -1368,7 +1480,7 @@ public class GestionBibliotecaMuskiz {
 
             // Conectar a la base de datos
             try (Connection conn = connectMySQL()) {
-                //verificar si el usuario existe
+                // verificar si el usuario existe
                 String checkInicioSesion = "SELECT * FROM usuarios WHERE nombre AND contraseña = ?";
                 try (PreparedStatement st = conn.prepareStatement(checkInicioSesion)) {
                     checkInicioSesion.substring(1, Integer.parseInt(nom));
@@ -1378,7 +1490,8 @@ public class GestionBibliotecaMuskiz {
                     if (rs.next()) {
                         inicioSesion = true; // Usuario encontrado
                     } else {
-                        System.out.println("No se encontró usuario con nombre y contraseña proporcionados. Inténtelo de nuevo.");
+                        System.out.println(
+                                "No se encontró usuario con nombre y contraseña proporcionados. Inténtelo de nuevo.");
                     }
                 }
             } catch (Exception e) {
@@ -1388,5 +1501,23 @@ public class GestionBibliotecaMuskiz {
         }
 
         return inicioSesion;
+    }
+
+    // Comprobar ejemplares que estan prestados
+    private static int comprobarEjemplaresPrestados(int codLibro) {
+        String checkPrestamosSql = "SELECT COUNT(*) FROM prestamos p JOIN ejemplares e ON p.cod_ejemplar = e.cod_ejemplar WHERE e.cod_libro = ? AND p.fecha_devolucion IS NULL";
+        try (Connection conn = connectMySQL()) {
+            try (PreparedStatement checkPrestamosStmt = conn.prepareStatement(checkPrestamosSql)) {
+                checkPrestamosStmt.setInt(1, codLibro);
+                ResultSet rs = checkPrestamosStmt.executeQuery();
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+        return 0;
     }
 }
