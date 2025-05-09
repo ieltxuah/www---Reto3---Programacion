@@ -435,11 +435,46 @@ public class GestionBibliotecaMuskiz {
                 int filas = stmt.executeUpdate();
                 if (filas > 0) {
                     System.out.println("Libro agregado correctamente con código: " + codLibro);
+                    // Llamar al método para agregar ejemplares
+                    agregarEjemplares(codLibro, nCopias);
                 } else {
                     System.out.println("Error al insertar el libro.");
                 }
             }
 
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
+
+    // Agregar ejemplares en base al libro a añadir
+    private static void agregarEjemplares(int codLibro, int nCopias) {
+        String sql = "INSERT INTO ejemplares (cod_ejemplar, cod_estado, cod_libro) VALUES (?, ?, ?)";
+        int codEjemplar;
+        boolean codUnico = false;
+        try (Connection conn = connectMySQL()) {
+            for (int i = 0; i < nCopias; i++) {
+                do {
+                    codEjemplar = generarCodigo(99999999);
+
+                    String checkSql = "SELECT COUNT(*) FROM libros WHERE cod_libro = ?";
+                    try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                        checkStmt.setInt(1, codEjemplar);
+                        ResultSet rs = checkStmt.executeQuery();
+                        if (rs.next() && rs.getInt(1) == 0) {
+                            codUnico = true;
+                        }
+                    }
+                } while (!codUnico);
+
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setInt(1, codEjemplar);
+                    stmt.setInt(2, 1);
+                    stmt.setInt(3, codLibro);
+                    stmt.executeUpdate();
+                }
+            }
         } catch (SQLException e) {
             System.out.println("Error de conexión o SQL:");
             e.printStackTrace();
