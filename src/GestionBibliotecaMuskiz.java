@@ -1003,11 +1003,11 @@ public static void consultarLibrosPorValoracion(Connection conn, int valoracionB
     }
 
     // Realizar préstamo de un libro
-    public static void realizarPrestamo(Connection conn, short codLibro, String nombreUsuario) {
+    public static void realizarPrestamo(Connection conn, String codLibro, String nombreUsuario) {
         String insertPrestamo = "INSERT INTO prestamos (cod_ejemplar, cod_usuario) VALUES (?, ?)";
         // Registrar el préstamo en la base de datos
         try (PreparedStatement pstmt = conn.prepareStatement(insertPrestamo)) {
-            pstmt.setInt(1, codLibro); // Código del libro
+            pstmt.setString(1, codLibro); // Código del libro
             pstmt.setString(2, nombreUsuario); // Nombre del usuario
             int filasAfectadas = pstmt.executeUpdate();
             if (filasAfectadas > 0) {
@@ -1021,7 +1021,7 @@ public static void consultarLibrosPorValoracion(Connection conn, int valoracionB
         // Actualizar la disponibilidad del libro
         String updateDisponibilidad = "UPDATE libros SET n_copias = n_copias - 1 WHERE cod_libro = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(updateDisponibilidad)) {
-            pstmt.setShort(1, codLibro); // Código del libro
+            pstmt.setString(1, codLibro); // Código del libro
             int filasAfectadas = pstmt.executeUpdate();
             if (filasAfectadas > 0) {
                 System.out.println("Disponibilidad actualizada correctamente.");
@@ -1034,11 +1034,11 @@ public static void consultarLibrosPorValoracion(Connection conn, int valoracionB
     }
 
     // Devolver libro
-    public static void realizarDevolucion(Connection conn, short codLibro) {
+    public static void realizarDevolucion(Connection conn, String codLibro) {
         String deletePrestamo = "DELETE FROM prestamos WHERE cod_ejemplar = ?";
         // Registrar la devolución en la base de datos
         try (PreparedStatement pstmt = conn.prepareStatement(deletePrestamo)) {
-            pstmt.setShort(1, codLibro); // Código del libro
+            pstmt.setString(1, codLibro); // Código del libro
             int filasAfectadas = pstmt.executeUpdate();
             if (filasAfectadas > 0) {
                 System.out.println("Devolución registrada correctamente.");
@@ -1051,7 +1051,7 @@ public static void consultarLibrosPorValoracion(Connection conn, int valoracionB
         // Actualizar la disponibilidad del libro
         String updateDisponibilidad = "UPDATE libros SET n_copias = n_copias + 1 WHERE cod_libro = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(updateDisponibilidad)) {
-            pstmt.setShort(1, codLibro); // Código del libro
+            pstmt.setString(1, codLibro); // Código del libro
             int filasAfectadas = pstmt.executeUpdate();
             if (filasAfectadas > 0) {
                 System.out.println("Disponibilidad actualizada correctamente.");
