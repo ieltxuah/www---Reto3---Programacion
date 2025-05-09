@@ -1165,9 +1165,8 @@ public class GestionBibliotecaMuskiz {
         return true; // Si se encontró al menos un autor
     }
 
-     // Alta tabla Autores
+     // Alta tabla socios
     private static void agregarSocio(Scanner scanner) {
-        System.out.println("Has elegido: Alta de socios.");
 
         String dni = validarDNI(scanner);
         String nombre = validarNombre(scanner, "nombre");
@@ -1187,7 +1186,7 @@ public class GestionBibliotecaMuskiz {
                 codSocio = generarCodigo(99999999);
                 codUsuario = generarCodigo(99999999);
 
-                String checkSql = "SELECT COUNT(*) FROM socios WHERE cod_socio = ? OR cod_usuario = ?";
+                String checkSql = "SELECT COUNT(*) FROM usuarios WHERE cod_socio = ? OR cod_usuario = ?";
                 try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
                     checkStmt.setInt(1, codSocio);
                     checkStmt.setInt(2, codUsuario);
@@ -1198,10 +1197,10 @@ public class GestionBibliotecaMuskiz {
                 }
             } while (!codUnico);
 
-            // Insertar socio
-            String sql = "INSERT INTO socios (cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario, contraseña) " +
+        // Insertar socio
+        String sql = "INSERT INTO usuarios (cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario, contraseña) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setInt(1, codUsuario);
                 stmt.setInt(2, codSocio);
                 stmt.setString(3, dni);
