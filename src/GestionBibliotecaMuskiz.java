@@ -255,12 +255,7 @@ public class GestionBibliotecaMuskiz {
                         System.out.println("El código debe ser numérico.");
                     } else {
                         // Llamar a la función de baja
-                        boolean resultado = borrarAutor(connectMySQL(), codAutorBaja);
-                        if (resultado) {
-                            System.out.println("Autor eliminado correctamente.");
-                        } else {
-                            System.out.println("Error al eliminar el autor.");
-                        }
+                        borrarAutor(connectMySQL(), codAutorBaja);
                     }
 
                     break; // Se queda en el submenú para seguir eligiendo
@@ -1348,5 +1343,23 @@ public class GestionBibliotecaMuskiz {
         }
 
         return inicioSesion;
+    }
+
+    // Comprobar ejemplares que estan prestados
+    private static int comprobarEjemplaresPrestados(int codLibro) {
+        String checkPrestamosSql = "SELECT COUNT(*) FROM prestamos p JOIN ejemplares e ON p.cod_ejemplar = e.cod_ejemplar WHERE e.cod_libro = ? AND p.fecha_devolucion IS NULL";
+        try (Connection conn = connectMySQL()) {
+            try (PreparedStatement checkPrestamosStmt = conn.prepareStatement(checkPrestamosSql)) {
+                checkPrestamosStmt.setInt(1, codLibro);
+                ResultSet rs = checkPrestamosStmt.executeQuery();
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+        return 0;
     }
 }
