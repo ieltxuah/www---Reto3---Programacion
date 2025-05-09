@@ -185,13 +185,14 @@ public class GestionBibliotecaMuskiz {
                         System.out.println("\n--- CONSULTAR LIBROS ---");
                         System.out.println("1. Todos los datos");
                         System.out.println("2. Filtrar por ISBN");
-                        System.out.print("Elige una opción (1 o 2): ");
+                        System.out.println("3. Filtrar por valoración");
+                        System.out.print("Elige una opción: ");
                         opcionConsulta = scanner.nextLine().trim();
 
                         if (!opcionConsulta.equals("1") && !opcionConsulta.equals("2")) {
-                            System.out.println("Opción no válida. Por favor elige 1 o 2.");
+                            System.out.println("Opción no válida. Por favor elige del 1 al 3.");
                         }
-                    } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2"));
+                    } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2") && !opcionConsulta.equals("3"));
 
                     // Leer opción usuario
                     switch (opcionConsulta) {
@@ -203,6 +204,11 @@ public class GestionBibliotecaMuskiz {
                         case "2":
                             String isbnBuscar = validarISBN(scanner);
                             consultarLibroPorISBN(connectMySQL(), isbnBuscar);
+                            break;
+
+                        case "3":
+                            int valoracionBuscar = validarValoracion(scanner);
+                            consultarLibrosPorValoracion(connectMySQL(), valoracionBuscar);
                             break;
 
                         default:
@@ -635,11 +641,46 @@ public class GestionBibliotecaMuskiz {
                 int filas = stmt.executeUpdate();
                 if (filas > 0) {
                     System.out.println("Libro agregado correctamente con código: " + codLibro);
+                    // Llamar al método para agregar ejemplares
+                    agregarEjemplares(codLibro, nCopias);
                 } else {
                     System.out.println("Error al insertar el libro.");
                 }
             }
 
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
+
+    // Agregar ejemplares en base al libro a añadir
+    private static void agregarEjemplares(int codLibro, int nCopias) {
+        String sql = "INSERT INTO ejemplares (cod_ejemplar, cod_estado, cod_libro) VALUES (?, ?, ?)";
+        int codEjemplar;
+        boolean codUnico = false;
+        try (Connection conn = connectMySQL()) {
+            for (int i = 0; i < nCopias; i++) {
+                do {
+                    codEjemplar = generarCodigo(99999999);
+
+                    String checkSql = "SELECT COUNT(*) FROM libros WHERE cod_libro = ?";
+                    try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                        checkStmt.setInt(1, codEjemplar);
+                        ResultSet rs = checkStmt.executeQuery();
+                        if (rs.next() && rs.getInt(1) == 0) {
+                            codUnico = true;
+                        }
+                    }
+                } while (!codUnico);
+
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setInt(1, codEjemplar);
+                    stmt.setInt(2, 1);
+                    stmt.setInt(3, codLibro);
+                    stmt.executeUpdate();
+                }
+            }
         } catch (SQLException e) {
             System.out.println("Error de conexión o SQL:");
             e.printStackTrace();
@@ -764,6 +805,24 @@ public class GestionBibliotecaMuskiz {
             System.out.println("Error al consultar por ISBN: " + e.getMessage());
         }
     }
+
+        // Consultar tabla Libros filtrando valoración
+public static void consultarLibrosPorValoracion(Connection conn, int valoracionBuscar) {
+    String sql = "SELECT * FROM libros WHERE valoracion = ?";
+    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        stmt.setInt(1, valoracionBuscar);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            System.out.println("Código: " + rs.getInt("cod_libro") +
+                    ", ISBN: " + rs.getString("isbn") +
+                    ", Título: " + rs.getString("titulo") +
+                    ", Copias: " + rs.getInt("n_copias") +
+                    ", Valoración: " + rs.getInt("valoracion"));
+        }
+    } catch (SQLException e) {
+        System.out.println("Error al consultar por valoración: " + e.getMessage());
+    }
+}
 
     // Alta tabla Autores
     private static void agregarAutor(Scanner scanner) {
