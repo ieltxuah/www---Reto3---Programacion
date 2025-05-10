@@ -653,6 +653,25 @@ public class GestionBibliotecaMuskiz {
 
                 case "2":
                     System.out.println("Has elegido: Borrar socio.");
+                    String dniBaja = "";
+                    boolean dniValido = false;
+
+                    do {
+                        System.out.print("Introduce el DNI del socio a eliminar: ");
+                        dniBaja = scanner.nextLine().trim().toUpperCase();
+
+                        if (dniBaja.isEmpty()) {
+                            System.out.println("El DNI no puede estar vacío. Inténtalo de nuevo.");
+                        } else if (!dniBaja.matches("\\d{8}[A-Z]")) {
+                            System.out.println(
+                                    "Formato de DNI inválido. Debe tener 8 números seguidos de una letra (ej: 12345678A).");
+                        } else {
+                            dniValido = true;
+                        }
+                    } while (!dniValido);
+
+                    // Llamar a la función de baja con el DNI validado
+                    borrarSocioPorDNI(connectMySQL(), dniBaja);
 
                     break;
 
@@ -1273,7 +1292,79 @@ public class GestionBibliotecaMuskiz {
         return true; // Si se encontró al menos un autor
     }
 
-    // Para el submenu Prestamos
+    // Alta tabla socios
+    private static void agregarSocio(Scanner scanner) {
+
+        String dni = validarDNI(scanner);
+        String nombre = validarNombre(scanner, "nombre");
+        String telefono = validarTelefono(scanner);
+        String correo = validarCorreo(scanner);
+        String usuario = validarNombre(scanner, "nombre de usuario");
+        String contraseña = validarContraseña(scanner);
+
+        int codSocio = validarCodigoGenerado(99999999, "usuarios", "cod_socio");
+        int codUsuario = validarCodigoGenerado(99999999, "usuarios", "cod_usuario");
+
+        try (Connection conn = connectMySQL()) {
+            // Insertar socio
+            String sql = "INSERT INTO usuarios (cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario, contraseña) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, codUsuario);
+                stmt.setInt(2, codSocio);
+                stmt.setString(3, dni);
+                stmt.setString(4, nombre);
+                stmt.setString(5, telefono);
+                stmt.setString(6, correo);
+                stmt.setString(7, usuario);
+                stmt.setString(8, contraseña);
+
+                int filas = stmt.executeUpdate();
+                if (filas > 0) {
+                    System.out.println("Socio agregado correctamente con código de socio: " + codSocio);
+                } else {
+                    System.out.println("Error al insertar el socio.");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
+
+    // Bajas socio
+    private static void borrarSocioPorDNI(Connection conn, String dni) {
+        try {
+            // Verificar si existe un socio con ese DNI
+            String checkSql = "SELECT COUNT(*) FROM usuarios WHERE dni = ?";
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                checkStmt.setString(1, dni);
+                ResultSet rs = checkStmt.executeQuery();
+                if (rs.next() && rs.getInt(1) == 0) {
+                    System.out.println("No se encontró ningún socio con ese DNI.");
+                    return;
+                }
+            }
+
+            // Eliminar socio
+            String deleteSql = "DELETE FROM usuarios WHERE dni = ?";
+            try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+                deleteStmt.setString(1, dni);
+                int filasAfectadas = deleteStmt.executeUpdate();
+                if (filasAfectadas > 0) {
+                    System.out.println("Socio eliminado correctamente.");
+                } else {
+                    System.out.println("No se pudo eliminar el socio.");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar el socio:");
+            e.printStackTrace();
+        }
+    }
+
     // Realizar préstamo de un libro
     public static void realizarPrestamo(Connection conn, String codLibro, String nombreUsuario) {
         String insertPrestamo = "INSERT INTO prestamos (cod_ejemplar, cod_usuario) VALUES (?, ?)";
