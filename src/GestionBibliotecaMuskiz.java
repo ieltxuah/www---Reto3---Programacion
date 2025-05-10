@@ -409,9 +409,19 @@ public class GestionBibliotecaMuskiz {
 
     // Submenú préstamos
     public static void mostrarMenuPrestamos(Scanner scanner) {
+        int codUsuario = validarInicioSesion(scanner);
+        if (codUsuario == -1) {
+            System.out.println("No se encontró usuario con nombre y contraseña proporcionados. Inténtelo de nuevo.");
+            return;
+        }
+
+        int nivelPenalizacion = 0;
         boolean continuar = true; // Variable para controlar el bucle
 
         while (continuar) {
+            System.out.println("\n--- Datos del Usuario ---");
+            System.out.println("- Código de usuario: " + codUsuario);
+            System.out.println("- Nivel de penalización: " + nivelPenalizacion);
             System.out.println("\n--- Menú de Préstamos ---");
             System.out.println("1. Prestar libro.");
             System.out.println("2. Devolver libro.");
@@ -432,32 +442,30 @@ public class GestionBibliotecaMuskiz {
                     boolean consultaPrestamo = true;
 
                     // Validar inicio de sesión de usuario
-                    if (validarInicioSesion(scanner)) {
-                        while (consultaPrestamo) {
-                            System.out.println("\n--- Menú de Préstamos ---");
-                            System.out.println("1. Realizar préstamo.");
-                            System.out.println("2. Regresar al menú anterior");
-                            System.out.print("Seleccione una opción: ");
+                    while (consultaPrestamo) {
+                        System.out.println("\n--- Menú de Préstamos ---");
+                        System.out.println("1. Realizar préstamo.");
+                        System.out.println("2. Regresar al menú anterior");
+                        System.out.print("Seleccione una opción: ");
 
-                            String opcionConsultar = scanner.nextLine().trim();
+                        String opcionConsultar = scanner.nextLine().trim();
 
-                            switch (opcionConsultar) {
-                                case "1":
-                                    // Realizar préstamo
-                                    String codLibro = validarISBN(scanner, false);
-                                    String nombreUsuario = validarNombre(scanner, "nombre del usuario");
-                                    realizarPrestamo(connectMySQL(), codLibro, nombreUsuario);
-                                    break;
+                        switch (opcionConsultar) {
+                            case "1":
+                                // Realizar préstamo
+                                String codLibro = validarISBN(scanner, false);
+                                String nombreUsuario = validarNombre(scanner, "nombre del usuario");
+                                realizarPrestamo(connectMySQL(), codLibro, nombreUsuario);
+                                break;
 
-                                case "2":
-                                    // Regresar al menú anterior
-                                    consultaPrestamo = false;
-                                    break;
+                            case "2":
+                                // Regresar al menú anterior
+                                consultaPrestamo = false;
+                                break;
 
-                                default:
-                                    System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
-                                    break;
-                            }
+                            default:
+                                System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
+                                break;
                         }
                     }
                     break;
@@ -468,31 +476,29 @@ public class GestionBibliotecaMuskiz {
                     boolean consulatrDevolucion = true;
 
                     // Validar inicio de sesión de usuario
-                    if (validarInicioSesion(scanner)) {
-                        while (consulatrDevolucion) {
-                            System.out.println("\n--- Menú de Devoluciones ---");
-                            System.out.println("1. Realizar préstamo.");
-                            System.out.println("2. Regresar al menú anterior");
-                            System.out.print("Seleccione una opción: ");
+                    while (consulatrDevolucion) {
+                        System.out.println("\n--- Menú de Devoluciones ---");
+                        System.out.println("1. Realizar préstamo.");
+                        System.out.println("2. Regresar al menú anterior");
+                        System.out.print("Seleccione una opción: ");
 
-                            String opcionConsultar = scanner.nextLine().trim();
+                        String opcionConsultar = scanner.nextLine().trim();
 
-                            switch (opcionConsultar) {
-                                case "1":
-                                    // Realizar devolución
-                                    String codLibro = validarISBN(scanner, false);
-                                    realizarDevolucion(connectMySQL(), codLibro);
-                                    break;
+                        switch (opcionConsultar) {
+                            case "1":
+                                // Realizar devolución
+                                String codLibro = validarISBN(scanner, false);
+                                realizarDevolucion(connectMySQL(), codLibro);
+                                break;
 
-                                case "2":
-                                    // Regresar al menú anterior
-                                    consulatrDevolucion = false;
-                                    break;
+                            case "2":
+                                // Regresar al menú anterior
+                                consulatrDevolucion = false;
+                                break;
 
-                                default:
-                                    System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
-                                    break;
-                            }
+                            default:
+                                System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
+                                break;
                         }
                     }
 
@@ -506,46 +512,44 @@ public class GestionBibliotecaMuskiz {
                         boolean consultaPrestamos = true;
 
                         // Validar inicio de sesión de usuario
-                        if (validarInicioSesion(scanner)) {
-                            while (consultaPrestamos) {
-                                System.out.println("\n--- Menú de Consulta de Préstamos ---");
-                                System.out.println("1. Consultar préstamos.");
-                                System.out.println("4. Regresar al menú anterior.");
-                                System.out.print("Seleccione una opción: ");
+                        while (consultaPrestamos) {
+                            System.out.println("\n--- Menú de Consulta de Préstamos ---");
+                            System.out.println("1. Consultar préstamos.");
+                            System.out.println("4. Regresar al menú anterior.");
+                            System.out.print("Seleccione una opción: ");
 
-                                String opcionConsultar = scanner.nextLine().trim();
+                            String opcionConsultar = scanner.nextLine().trim();
 
-                                switch (opcionConsultar) {
-                                    case "1":
-                                        String nombreUsuario;
-                                        do {
-                                            System.out.println("Introduce el nombre de usuario: ");
-                                            nombreUsuario = scanner.nextLine().trim();
+                            switch (opcionConsultar) {
+                                case "1":
+                                    String nombreUsuario;
+                                    do {
+                                        System.out.println("Introduce el nombre de usuario: ");
+                                        nombreUsuario = scanner.nextLine().trim();
 
-                                            if (nombreUsuario.isEmpty()
-                                                    || !nombreUsuario.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
-                                                System.out.println(
-                                                        "Nombre no válido. Debe contener solo letras y no estar vacío.");
-                                                nombreUsuario = null; // Forzar repetición
-                                            }
-                                        } while (nombreUsuario == null);
-
-                                        if (!consultarPrestamosUsuario(conn, nombreUsuario)) {
-                                            System.out
-                                                    .println("No se encontró el autor con el nombre: " + nombreUsuario);
+                                        if (nombreUsuario.isEmpty()
+                                                || !nombreUsuario.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
+                                            System.out.println(
+                                                    "Nombre no válido. Debe contener solo letras y no estar vacío.");
+                                            nombreUsuario = null; // Forzar repetición
                                         }
-                                        break;
+                                    } while (nombreUsuario == null);
 
-                                    case "4":
-                                        // Regresar al menú anterior
-                                        consultaPrestamos = false;
-                                        break;
-
-                                    default:
+                                    if (!consultarPrestamosUsuario(conn, nombreUsuario)) {
                                         System.out
-                                                .println("Opción no válida. Por favor, seleccione una opción válida.");
-                                        break;
-                                }
+                                                .println("No se encontró el autor con el nombre: " + nombreUsuario);
+                                    }
+                                    break;
+
+                                case "4":
+                                    // Regresar al menú anterior
+                                    consultaPrestamos = false;
+                                    break;
+
+                                default:
+                                    System.out
+                                            .println("Opción no válida. Por favor, seleccione una opción válida.");
+                                    break;
                             }
                         }
                         break; // Vuelve al menú de préstamos
@@ -561,29 +565,27 @@ public class GestionBibliotecaMuskiz {
                     boolean consultaDisponibilidad = true;
 
                     // Validar inicio de sesión de usuario
-                    if (validarInicioSesion(scanner)) {
-                        while (consultaDisponibilidad) {
-                            System.out.println("\n--- Menú de Consulta de Disponibilidad ---");
-                            System.out.println("1. Consultar disponibilidad.");
-                            System.out.println("4. Regresar al menú anterior.");
-                            System.out.print("Seleccione una opción: ");
+                    while (consultaDisponibilidad) {
+                        System.out.println("\n--- Menú de Consulta de Disponibilidad ---");
+                        System.out.println("1. Consultar disponibilidad.");
+                        System.out.println("4. Regresar al menú anterior.");
+                        System.out.print("Seleccione una opción: ");
 
-                            String opcionConsultar = scanner.nextLine().trim();
+                        String opcionConsultar = scanner.nextLine().trim();
 
-                            switch (opcionConsultar) {
-                                case "1":
-                                    consultarDisponibilidadLibros(connectMySQL());
-                                    break;
+                        switch (opcionConsultar) {
+                            case "1":
+                                consultarDisponibilidadLibros(connectMySQL());
+                                break;
 
-                                case "4":
-                                    // Regresar al menú anterior
-                                    consultaDisponibilidad = false;
-                                    break;
+                            case "4":
+                                // Regresar al menú anterior
+                                consultaDisponibilidad = false;
+                                break;
 
-                                default:
-                                    System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
-                                    break;
-                            }
+                            default:
+                                System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
+                                break;
                         }
                     }
 
@@ -1494,41 +1496,44 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Validar inicio de sesión de usuario
-    private static boolean validarInicioSesion(Scanner scanner) {
+    private static int validarInicioSesion(Scanner scanner) {
         String nom = "";
         String pass = "";
-        boolean inicioSesion = false;
+        int codUsuario = -1;
 
-        while (!inicioSesion) {
-            // Pedir nombre de usuario y contraseña
-            System.out.println("Introduzca nombre de usuario: ");
-            nom = scanner.nextLine().trim();
-            System.out.println("Introduzca contraseña: ");
-            pass = scanner.nextLine().trim();
-
-            // Conectar a la base de datos
-            try (Connection conn = connectMySQL()) {
-                // verificar si el usuario existe
-                String checkInicioSesion = "SELECT * FROM usuarios WHERE nombre AND contraseña = ?";
-                try (PreparedStatement st = conn.prepareStatement(checkInicioSesion)) {
-                    checkInicioSesion.substring(1, Integer.parseInt(nom));
-                    checkInicioSesion.substring(2, Integer.parseInt(pass));
-                    ResultSet rs = st.executeQuery();
-
-                    if (rs.next()) {
-                        inicioSesion = true; // Usuario encontrado
-                    } else {
-                        System.out.println(
-                                "No se encontró usuario con nombre y contraseña proporcionados. Inténtelo de nuevo.");
-                    }
-                }
-            } catch (Exception e) {
-                System.out.println("Error de conexión o SQL:");
-                e.printStackTrace();
-            }
+        // Pedir nombre de usuario y contraseña
+        System.out.println("Introduzca nombre de usuario: ");
+        nom = scanner.nextLine().trim();
+        if (nom.isEmpty()) {
+            System.out.println("Nombre de usuario no puede estar vacíos. Saliendo...");
+            return -1;
+        }
+        System.out.println("Introduzca contraseña: ");
+        pass = scanner.nextLine().trim();
+        if (pass.isEmpty()) {
+            System.out.println("Contraseña no puede estar vacíos. Saliendo...");
+            return -1;
         }
 
-        return inicioSesion;
+        // Conectar a la base de datos
+        try (Connection conn = connectMySQL()) {
+            // verificar si el usuario existe
+            String checkInicioSesion = "SELECT cod_usuario FROM usuarios WHERE usuario = ? AND contraseña = ?";
+            try (PreparedStatement st = conn.prepareStatement(checkInicioSesion)) {
+                st.setString(1, nom);
+                st.setString(2, pass);
+                ResultSet rs = st.executeQuery();
+
+                if (rs.next()) {
+                    codUsuario = rs.getInt("cod_usuario"); // Usuario encontrado
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+
+        return codUsuario;
     }
 
     // Comprobar ejemplares que estan prestados
