@@ -71,7 +71,7 @@ public class GestionBibliotecaMuskiz {
                                     "Error al cerrar la conexión a la base de datos, por favor crea un ticket con el error para solventar el problema: "
                                             + e.getMessage());
                         }
-                        return; // Salimos del programa
+                        break;
 
                     default:
                         System.out.println("Opción no válida. Por favor, intente de nuevo.\n");
@@ -509,58 +509,7 @@ public class GestionBibliotecaMuskiz {
 
                 case "3":
                     System.out.println("Has elegido: Consultar tus Préstamos.");
-
-                    // Mantener la conexión abierta para el menú de consultar préstamos
-                    try (Connection conn = connectMySQL()) {
-                        boolean consultaPrestamos = true;
-
-                        // Validar inicio de sesión de usuario
-                        while (consultaPrestamos) {
-                            System.out.println("\n--- Menú de Consulta de Préstamos ---");
-                            System.out.println("1. Consultar préstamos.");
-                            System.out.println("4. Regresar al menú anterior.");
-                            System.out.print("Seleccione una opción: ");
-
-                            String opcionConsultar = scanner.nextLine().trim();
-
-                            switch (opcionConsultar) {
-                                case "1":
-                                    String nombreUsuario;
-                                    do {
-                                        System.out.println("Introduce el nombre de usuario: ");
-                                        nombreUsuario = scanner.nextLine().trim();
-
-                                        if (nombreUsuario.isEmpty()
-                                                || !nombreUsuario.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
-                                            System.out.println(
-                                                    "Nombre no válido. Debe contener solo letras y no estar vacío.");
-                                            nombreUsuario = null; // Forzar repetición
-                                        }
-                                    } while (nombreUsuario == null);
-
-                                    if (!consultarPrestamosUsuario(conn, nombreUsuario)) {
-                                        System.out
-                                                .println("No se encontró el autor con el nombre: " + nombreUsuario);
-                                    }
-                                    break;
-
-                                case "4":
-                                    // Regresar al menú anterior
-                                    consultaPrestamos = false;
-                                    break;
-
-                                default:
-                                    System.out
-                                            .println("Opción no válida. Por favor, seleccione una opción válida.");
-                                    break;
-                            }
-                        }
-                        break; // Vuelve al menú de préstamos
-
-                    } catch (Exception e) {
-                        System.out.println("Error de conexión o SQL:");
-                        e.printStackTrace();
-                    }
+                    consultarPrestamosUsuario(connectMySQL(), codUsuario);
                     break;
 
                 case "4":
@@ -1366,6 +1315,7 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
+    // Para el submenu Prestamos
     // Realizar préstamo de un libro
     public static void realizarPrestamo(Connection conn, String codLibro, String nombreUsuario) {
         String insertPrestamo = "INSERT INTO prestamos (cod_ejemplar, cod_usuario) VALUES (?, ?)";
@@ -1438,11 +1388,16 @@ public class GestionBibliotecaMuskiz {
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             ResultSet rs = pstmt.executeQuery();
             System.out.println("Libros disponibles:");
+            boolean hayResultados = false;
             while (rs.next()) {
+                hayResultados = true;
                 String titulo = rs.getString("titulo");
                 long isbn = rs.getLong("isbn");
                 int disponibles = rs.getInt("disponibles");
                 System.out.println("Título: " + titulo + ", ISBN: " + isbn + ", Disponibles: " + disponibles);
+            }
+            if (!hayResultados) {
+                System.out.println("No se encontraron libros disponibles.");
             }
         } catch (SQLException e) {
             System.out.println("Error al consultar disponibilidad de libros: " + e.getMessage());
@@ -1478,20 +1433,35 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Consultar prestamos de un usuario
-    public static boolean consultarPrestamosUsuario(Connection conn, String nombreUsuario) {
-        String sql = "SELECT * FROM prestamos WHERE cod_usuario = ?";
+    public static void consultarPrestamosUsuario(Connection conn, int codUsuario) {
+        String sql = "SELECT l.titulo, l.isbn, " +
+                "DATEDIFF(CURRENT_DATE, p.fecha_prestamo) AS dias_prestado " +
+                "FROM libros l " +
+                "JOIN ejemplares e ON l.cod_libro = e.cod_libro " +
+                "JOIN prestamos p ON e.cod_ejemplar = p.cod_ejemplar " +
+                "WHERE p.cod_usuario = ? AND p.fecha_devolucion IS NULL"; // Solo libros que no han sido devueltos
+
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, nombreUsuario);
+            pstmt.setInt(1, codUsuario); // Establecer el cod_usuario en la consulta
             ResultSet rs = pstmt.executeQuery();
-            System.out.println("Préstamos del usuario " + nombreUsuario + ":");
+            System.out.println("Libros prestados al usuario con código " + codUsuario + ":");
+            boolean hayResultados = false;
             while (rs.next()) {
-                System.out.println("Código Ejemplar: " + rs.getInt("cod_ejemplar") +
-                        ", Fecha de Préstamo: " + rs.getDate("fecha_prestamo"));
+                hayResultados = true;
+                String titulo = rs.getString("titulo");
+                long isbn = rs.getLong("isbn");
+                int diasConLibro = rs.getInt("dias_prestado");
+                int diasRetraso = diasConLibro - 7;
+                System.out.println("Título: " + titulo + ", ISBN: " + isbn +
+                        ", Días con el libro: " + diasConLibro +
+                        ", Días de retraso: " + (diasRetraso > 0 ? diasRetraso : 0));
+            }
+            if (!hayResultados) {
+                System.out.println("No se encontraron libros prestados.");
             }
         } catch (SQLException e) {
-            System.out.println("Error al consultar préstamos del usuario: " + e.getMessage());
+            System.out.println("Error al consultar libros prestados: " + e.getMessage());
         }
-        return false;
     }
 
     /// Validadores ///
