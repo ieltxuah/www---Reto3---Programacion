@@ -650,6 +650,24 @@ public class GestionBibliotecaMuskiz {
 
                 case "2":
                     System.out.println("Has elegido: Borrar socio.");
+                    String dniBaja = "";
+                    boolean dniValido = false;
+
+                    do {
+                        System.out.print("Introduce el DNI del socio a eliminar: ");
+                        dniBaja = scanner.nextLine().trim().toUpperCase();
+
+                        if (dniBaja.isEmpty()) {
+                            System.out.println("El DNI no puede estar vacío. Inténtalo de nuevo.");
+                        } else if (!dniBaja.matches("\\d{8}[A-Z]")) {
+                            System.out.println("Formato de DNI inválido. Debe tener 8 números seguidos de una letra (ej: 12345678A).");
+                        } else {
+                            dniValido = true;
+                        }
+                    } while (!dniValido);
+
+                    // Llamar a la función de baja con el DNI validado
+                    borrarSocioPorDNI(connectMySQL(), dniBaja);
 
                     break;
 
@@ -1308,6 +1326,39 @@ public class GestionBibliotecaMuskiz {
             e.printStackTrace();
         }
     }
+
+    // Bajas socio
+    private static void borrarSocioPorDNI(Connection conn, String dni) {
+    try {
+        // Verificar si existe un socio con ese DNI
+        String checkSql = "SELECT COUNT(*) FROM usuarios WHERE dni = ?";
+        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            checkStmt.setString(1, dni);
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next() && rs.getInt(1) == 0) {
+                System.out.println("No se encontró ningún socio con ese DNI.");
+                return;
+            }
+        }
+
+        // Eliminar socio
+        String deleteSql = "DELETE FROM usuarios WHERE dni = ?";
+        try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+            deleteStmt.setString(1, dni);
+            int filasAfectadas = deleteStmt.executeUpdate();
+            if (filasAfectadas > 0) {
+                System.out.println("Socio eliminado correctamente.");
+            } else {
+                System.out.println("No se pudo eliminar el socio.");
+            }
+        }
+
+    } catch (SQLException e) {
+        System.out.println("Error al eliminar el socio:");
+        e.printStackTrace();
+    }
+}
+
 
     // Realizar préstamo de un libro
     public static void realizarPrestamo(Connection conn, String codLibro, String nombreUsuario) {
