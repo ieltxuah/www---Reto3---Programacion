@@ -4,7 +4,7 @@
 
 ### Descripción del Proyecto
 
-Este proyecto, desarrollado por el Grupo 1 (WWW), consiste en la creación de un programa en Java que permite gestionar una base de datos (BBDD) para una biblioteca. El sistema incluye funcionalidades para realizar altas, bajas, modificaciones y consultas de datos relacionados con autores, libros, usuarios y la gestión de préstamos.
+Este proyecto, desarrollado por el Grupo 1 (www), consiste en la creación de un programa en Java que permite gestionar una base de datos (BBDD) MySQL para una biblioteca. El sistema incluye funcionalidades para realizar altas, bajas, modificaciones y consultas de datos relacionados con autores, libros, usuarios y la gestión de préstamos.
 
 ### Funcionalidades
 
@@ -37,50 +37,50 @@ El programa incluye las siguientes funcionalidades:
 ### Tecnologías Utilizadas
 
 - **Lenguaje de Programación**: Java
-- **Base de Datos**: [Especificar el tipo de base de datos utilizada, por ejemplo, MySQL, SQLite, etc.]
-- **IDE**: [Especificar el entorno de desarrollo utilizado, por ejemplo, IntelliJ IDEA, Eclipse, Visual Studio Code, etc.]
+- **Base de Datos**: MySQL
+- **IDE**: Visual Studio Code
 - **Control de Versiones**: Git
 
 ### Instalación
 
 1. Clona el repositorio en tu máquina local:
 
+``` bash
+git clone [URL del repositorio]
+```
 
-bash
+2. Navega al directorio del proyecto:
 
-- `git clone [URL del repositorio]`
+``` bash
+cd www---Reto3---Programacion
+```
 
-- Navega al directorio del proyecto:
+3. Crea una carpeta llamada `lib` en el directorio del proyecto:
 
+```bash
+mkdir lib
+```
 
-bash
+4. Descárgate el conector JDBC correspondiente a la base de datos MySQL (MySQL Connector/J) desde [el sitio oficial de MySQL](https://dev.mysql.com/downloads/connector/j/).
 
-- `cd reto3-gestion-biblioteca`
+5. Copia el archivo JAR del conector descargado en la carpeta `lib`.
 
-- Crea una carpeta llamada `lib` en el directorio del proyecto:
-
-
-bash
-
-- `mkdir lib`
-
-- Descárgate el conector JDBC correspondiente a tu base de datos (por ejemplo, MySQL Connector/J) desde [el sitio oficial de MySQL](https://dev.mysql.com/downloads/connector/j/).
-
-- Copia el archivo JAR del conector descargado en la carpeta `lib`.
-
-- Enlaza el conector JDBC al proyecto en Visual Studio Code:
+6. Enlaza el conector JDBC al proyecto en Visual Studio Code:
 
     - Abre Visual Studio Code y carga el proyecto.
     - Asegúrate de tener instalada la extensión "Java Extension Pack" para facilitar el desarrollo en Java.
     - Abre el archivo `settings.json` de tu proyecto (puedes encontrarlo en la carpeta `.vscode` o crear uno si no existe).
     - Añade la siguiente configuración para incluir el JAR del conector en el classpath:
 
-
-json
-
-- - `{   "java.project.referencedLibraries": [     "lib/*.jar"   ] }`
+```json
+{
+  "java.project.referencedLibraries": [
+    "lib/*.jar"
+  ]
+}
+```
 
     - Guarda los cambios.
-- Asegúrate de tener las dependencias necesarias instaladas. [Incluir instrucciones específicas si es necesario].
+7. Asegúrate de tener las dependencias necesarias instaladas.
 
-- Compila y ejecuta el programa
+8. Compila y ejecuta el programa.
