@@ -567,7 +567,9 @@ public class GestionBibliotecaMuskiz {
                     // Validar inicio de sesión de usuario
                     while (consultaDisponibilidad) {
                         System.out.println("\n--- Menú de Consulta de Disponibilidad ---");
-                        System.out.println("1. Consultar disponibilidad.");
+                        System.out.println("1. Consultar disponibilidad de todos los libros.");
+                        System.out.println("2. Consultar disponibilidad de un libro (Filtrado por ISBN).");
+                        System.out.println("3. Consultar disponibilidad de un libro (Filtrado por titulo).");
                         System.out.println("4. Regresar al menú anterior.");
                         System.out.print("Seleccione una opción: ");
 
@@ -576,6 +578,26 @@ public class GestionBibliotecaMuskiz {
                         switch (opcionConsultar) {
                             case "1":
                                 consultarDisponibilidadLibros(connectMySQL());
+                                break;
+
+                            case "2":
+                                System.out.print("Introduce el ISBN del libro (13 dígitos): ");
+                                String isbn = scanner.nextLine().trim();
+                                if (isbn.isEmpty() || !isbn.matches("\\d{13}")) {
+                                    System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
+                                } else {
+                                    consultarDisponibilidadLibrosFiltrado(connectMySQL(), "isbn", isbn);
+                                }
+                                break;
+
+                            case "3":
+                                System.out.print("Introduce el titulo del libro: ");
+                                String titulo = scanner.nextLine().trim();
+                                if (titulo.isEmpty() || titulo.matches("\\d+")) {
+                                    System.out.println("El titulo no puede estar vacío y no puede ser solo números.");
+                                } else {
+                                    consultarDisponibilidadLibrosFiltrado(connectMySQL(), "titulo", titulo);
+                                }
                                 break;
 
                             case "4":
@@ -1350,15 +1372,48 @@ public class GestionBibliotecaMuskiz {
 
     // Consultar disponibilidad de libros
     public static void consultarDisponibilidadLibros(Connection conn) {
-        String sql = "SELECT * FROM libros WHERE n_copias > 0";
+        String sql = "SELECT l.titulo, l.isbn, COUNT(e.cod_ejemplar) AS disponibles " +
+                "FROM libros l " +
+                "JOIN ejemplares e ON l.cod_libro = e.cod_libro " +
+                "LEFT JOIN prestamos p ON e.cod_ejemplar = p.cod_ejemplar AND p.fecha_devolucion IS NULL " +
+                "WHERE p.cod_prestamo IS NULL " +
+                "GROUP BY l.cod_libro";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             ResultSet rs = pstmt.executeQuery();
             System.out.println("Libros disponibles:");
             while (rs.next()) {
-                System.out.println("Código: " + rs.getInt("cod_libro") +
-                        ", ISBN: " + rs.getString("isbn") +
-                        ", Título: " + rs.getString("titulo") +
-                        ", Copias disponibles: " + rs.getInt("n_copias"));
+                String titulo = rs.getString("titulo");
+                long isbn = rs.getLong("isbn");
+                int disponibles = rs.getInt("disponibles");
+                System.out.println("Título: " + titulo + ", ISBN: " + isbn + ", Disponibles: " + disponibles);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al consultar disponibilidad de libros: " + e.getMessage());
+        }
+    }
+
+    // Consultar disponibilidad de libros con filtro
+    public static void consultarDisponibilidadLibrosFiltrado(Connection conn, String tipo, String valor) {
+        String sql = "SELECT l.titulo, l.isbn, COUNT(e.cod_ejemplar) AS disponibles " +
+                "FROM libros l " +
+                "JOIN ejemplares e ON l.cod_libro = e.cod_libro " +
+                "LEFT JOIN prestamos p ON e.cod_ejemplar = p.cod_ejemplar AND p.fecha_devolucion IS NULL " +
+                "WHERE l." + tipo + " = ? AND p.cod_prestamo IS NULL " +
+                "GROUP BY l.cod_libro";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, valor);
+            ResultSet rs = pstmt.executeQuery();
+            System.out.println("Libros disponibles:");
+            boolean hayResultados = false;
+            while (rs.next()) {
+                hayResultados = true;
+                String titulo = rs.getString("titulo");
+                long isbn = rs.getLong("isbn");
+                int disponibles = rs.getInt("disponibles");
+                System.out.println("Título: " + titulo + ", ISBN: " + isbn + ", Disponibles: " + disponibles);
+            }
+            if (!hayResultados) {
+                System.out.println("No se encontraron libros disponibles con el " + tipo + " proporcionado.");
             }
         } catch (SQLException e) {
             System.out.println("Error al consultar disponibilidad de libros: " + e.getMessage());
