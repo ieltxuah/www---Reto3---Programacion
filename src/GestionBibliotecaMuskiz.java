@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 import java.sql.Statement;
@@ -415,13 +416,15 @@ public class GestionBibliotecaMuskiz {
             return;
         }
 
-        int nivelPenalizacion = 0;
+        int nivelPenalizacion = comprobarPenalizacion(codUsuario);
+        long diasPenalizacion = diasPenalizacionRestantes(codUsuario);
         boolean continuar = true; // Variable para controlar el bucle
 
         while (continuar) {
             System.out.println("\n--- Datos del Usuario ---");
             System.out.println("- Código de usuario: " + codUsuario);
             System.out.println("- Nivel de penalización: " + nivelPenalizacion);
+            System.out.println("- Dias de penalización: " + diasPenalizacion);
             System.out.println("\n--- Menú de Préstamos ---");
             System.out.println("1. Prestar libro.");
             System.out.println("2. Devolver libro.");
@@ -699,6 +702,7 @@ public class GestionBibliotecaMuskiz {
         return cod;
     }
 
+    // Para el submenu Libros
     // Obtener codigo de libro a partir de isbn
     private static int obtenerCodLibroPorIsbn(String isbn) {
         String sql = "SELECT cod_libro FROM libros WHERE isbn = ?";
@@ -1114,6 +1118,7 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
+    // Para el submenu Autores
     // Alta tabla Autores
     private static void agregarAutor(Scanner scanner) {
         System.out.println("Has elegido: Altas.");
@@ -1268,47 +1273,7 @@ public class GestionBibliotecaMuskiz {
         return true; // Si se encontró al menos un autor
     }
 
-    // Alta tabla socios
-    private static void agregarSocio(Scanner scanner) {
-
-        String dni = validarDNI(scanner);
-        String nombre = validarNombre(scanner, "nombre");
-        String telefono = validarTelefono(scanner);
-        String correo = validarCorreo(scanner);
-        String usuario = validarNombre(scanner, "nombre de usuario");
-        String contraseña = validarContraseña(scanner);
-
-        int codSocio = validarCodigoGenerado(99999999, "usuarios", "cod_socio");
-        int codUsuario = validarCodigoGenerado(99999999, "usuarios", "cod_usuario");
-
-        try (Connection conn = connectMySQL()) {
-            // Insertar socio
-            String sql = "INSERT INTO usuarios (cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario, contraseña) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setInt(1, codUsuario);
-                stmt.setInt(2, codSocio);
-                stmt.setString(3, dni);
-                stmt.setString(4, nombre);
-                stmt.setString(5, telefono);
-                stmt.setString(6, correo);
-                stmt.setString(7, usuario);
-                stmt.setString(8, contraseña);
-
-                int filas = stmt.executeUpdate();
-                if (filas > 0) {
-                    System.out.println("Socio agregado correctamente con código de socio: " + codSocio);
-                } else {
-                    System.out.println("Error al insertar el socio.");
-                }
-            }
-
-        } catch (SQLException e) {
-            System.out.println("Error de conexión o SQL:");
-            e.printStackTrace();
-        }
-    }
-
+    // Para el submenu Prestamos
     // Realizar préstamo de un libro
     public static void realizarPrestamo(Connection conn, String codLibro, String nombreUsuario) {
         String insertPrestamo = "INSERT INTO prestamos (cod_ejemplar, cod_usuario) VALUES (?, ?)";
@@ -1435,6 +1400,48 @@ public class GestionBibliotecaMuskiz {
             System.out.println("Error al consultar préstamos del usuario: " + e.getMessage());
         }
         return false;
+    }
+
+    // Para el submenu Usuarios
+    // Alta tabla socios
+    private static void agregarSocio(Scanner scanner) {
+
+        String dni = validarDNI(scanner);
+        String nombre = validarNombre(scanner, "nombre");
+        String telefono = validarTelefono(scanner);
+        String correo = validarCorreo(scanner);
+        String usuario = validarNombre(scanner, "nombre de usuario");
+        String contraseña = validarContraseña(scanner);
+
+        int codSocio = validarCodigoGenerado(99999999, "usuarios", "cod_socio");
+        int codUsuario = validarCodigoGenerado(99999999, "usuarios", "cod_usuario");
+
+        try (Connection conn = connectMySQL()) {
+            // Insertar socio
+            String sql = "INSERT INTO usuarios (cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario, contraseña) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, codUsuario);
+                stmt.setInt(2, codSocio);
+                stmt.setString(3, dni);
+                stmt.setString(4, nombre);
+                stmt.setString(5, telefono);
+                stmt.setString(6, correo);
+                stmt.setString(7, usuario);
+                stmt.setString(8, contraseña);
+
+                int filas = stmt.executeUpdate();
+                if (filas > 0) {
+                    System.out.println("Socio agregado correctamente con código de socio: " + codSocio);
+                } else {
+                    System.out.println("Error al insertar el socio.");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
     }
 
     /// Validadores ///
@@ -1589,6 +1596,163 @@ public class GestionBibliotecaMuskiz {
         }
 
         return codUsuario;
+    }
+
+    // Comprobar penalización del usuario
+    private static int comprobarPenalizacion(int codUsuario) {
+        Date fechaPrestamo;
+        Date fechaDevolucion;
+        int maxPenalizacion = 0;
+
+        // Conectar a la base de datos
+        try (Connection conn = connectMySQL()) {
+            // Obtener la fecha de préstamo y la fecha de devolución
+            String query = "SELECT fecha_prestamo, fecha_devolucion FROM prestamos WHERE cod_usuario = ?;";
+            try (PreparedStatement st = conn.prepareStatement(query)) {
+                st.setInt(1, codUsuario);
+                ResultSet rs = st.executeQuery();
+
+                while (rs.next()) {
+                    fechaPrestamo = rs.getDate("fecha_prestamo");
+                    fechaDevolucion = rs.getDate("fecha_devolucion");
+
+                    int diasRetraso = 0;
+
+                    if (fechaDevolucion == null) {
+                        // Calcular los días de retraso si no ha sido devuelto
+                        diasRetraso = (int) ((new Date(System.currentTimeMillis()).getTime() - fechaPrestamo.getTime())
+                                / (1000 * 60 * 60 * 24)) - 7;
+                        if (diasRetraso < 0) {
+                            diasRetraso = 0; // No hay penalización si no hay días de retraso
+                        }
+                    } else {
+                        // Calcular días de tardanza si ya ha sido devuelto
+                        int diasTardanza = (int) ((fechaDevolucion.getTime() - fechaPrestamo.getTime())
+                                / (1000 * 60 * 60 * 24)) - 7;
+                        int diasDesdeDevolucion = (int) ((new Date(System.currentTimeMillis()).getTime()
+                                - fechaDevolucion.getTime()) / (1000 * 60 * 60 * 24));
+
+                        // Solo considerar días de tardanza si son positivos
+                        if (diasTardanza > 0 && diasTardanza < diasDesdeDevolucion) {
+                            diasRetraso = diasTardanza;
+                        } else {
+                            diasRetraso = 0;
+                        }
+                    }
+                    System.out.println(diasRetraso);
+
+                    // Calcular la penalización para este préstamo
+                    int penalizacion = calcularPenalizacionPorRetraso(diasRetraso);
+
+                    // Retener la penalización más alta
+                    if (penalizacion > maxPenalizacion) {
+                        maxPenalizacion = penalizacion;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+
+        // Solo actualizar la penalización si hay días de penalización
+        if (maxPenalizacion > 0) {
+            actualizarPenalizacion(codUsuario, maxPenalizacion);
+        } else {
+            // Si no hay penalización, asegurarse de que se establezca a 0
+            actualizarPenalizacion(codUsuario, 0);
+        }
+
+        return maxPenalizacion;
+    }
+
+    // Método para calcular la penalización según los días de retraso
+    private static int calcularPenalizacionPorRetraso(long diasRetraso) {
+        if (diasRetraso < 0) {
+            return 0;
+        } else if (diasRetraso < 7) {
+            return 1;
+        } else if (diasRetraso < 15) {
+            return 2;
+        } else {
+            return 3;
+        }
+    }
+
+    private static void actualizarPenalizacion(int codUsuario, int nuevaPenalizacion) {
+        // Asegúrate de que nuevaPenalizacion esté entre 0 y 3
+        if (nuevaPenalizacion < 0 || nuevaPenalizacion > 3) {
+            System.out.println("Error: La penalización debe estar entre 0 y 3.");
+            return; // O maneja el error de otra manera
+        }
+
+        try (Connection conn = connectMySQL()) {
+            String updateQuery = "UPDATE usuarios SET cod_penalizacion = ? WHERE cod_usuario = ?";
+            try (PreparedStatement st = conn.prepareStatement(updateQuery)) {
+                st.setInt(1, nuevaPenalizacion);
+                st.setInt(2, codUsuario);
+                st.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
+
+    private static int diasPenalizacionRestantes(int codUsuario) {
+        Date fechaPrestamo;
+        Date fechaDevolucion;
+        int maxDiasRetraso = 0;
+
+        // Conectar a la base de datos
+        try (Connection conn = connectMySQL()) {
+            // Obtener la fecha de préstamo y la fecha de devolución
+            String query = "SELECT fecha_prestamo, fecha_devolucion FROM prestamos WHERE cod_usuario = ?;";
+            try (PreparedStatement st = conn.prepareStatement(query)) {
+                st.setInt(1, codUsuario);
+                ResultSet rs = st.executeQuery();
+
+                while (rs.next()) {
+                    fechaPrestamo = rs.getDate("fecha_prestamo");
+                    fechaDevolucion = rs.getDate("fecha_devolucion");
+
+                    int diasRetraso = 0;
+
+                    if (fechaDevolucion == null) {
+                        // Calcular los días de retraso si no ha sido devuelto
+                        diasRetraso = (int) ((new Date(System.currentTimeMillis()).getTime() - fechaPrestamo.getTime())
+                                / (1000 * 60 * 60 * 24)) - 7;
+                        if (diasRetraso < 0) {
+                            diasRetraso = 0; // No hay penalización si no hay días de retraso
+                        }
+                    } else {
+                        // Calcular días de tardanza si ya ha sido devuelto
+                        int diasTardanza = (int) ((fechaDevolucion.getTime() - fechaPrestamo.getTime())
+                                / (1000 * 60 * 60 * 24)) - 7;
+                        int diasDesdeDevolucion = (int) ((new Date(System.currentTimeMillis()).getTime()
+                                - fechaDevolucion.getTime()) / (1000 * 60 * 60 * 24));
+
+                        // Solo considerar días de tardanza si son positivos
+                        if (diasTardanza > 0 && diasTardanza < diasDesdeDevolucion) {
+                            diasRetraso = diasTardanza;
+                        } else {
+                            diasRetraso = 0;
+                        }
+                    }
+                    System.out.println(diasRetraso);
+
+                    // Retener la penalización más alta
+                    if (diasRetraso > maxDiasRetraso) {
+                        maxDiasRetraso = diasRetraso;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+
+        return maxDiasRetraso;
     }
 
     // Comprobar ejemplares que estan prestados
