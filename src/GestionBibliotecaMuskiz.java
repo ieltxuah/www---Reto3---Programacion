@@ -1292,6 +1292,7 @@ public class GestionBibliotecaMuskiz {
         return true; // Si se encontró al menos un autor
     }
 
+    // Para el submenu Usuarios
     // Alta tabla socios
     private static void agregarSocio(Scanner scanner) {
 
@@ -1491,48 +1492,6 @@ public class GestionBibliotecaMuskiz {
             System.out.println("Error al consultar préstamos del usuario: " + e.getMessage());
         }
         return false;
-    }
-
-    // Para el submenu Usuarios
-    // Alta tabla socios
-    private static void agregarSocio(Scanner scanner) {
-
-        String dni = validarDNI(scanner);
-        String nombre = validarNombre(scanner, "nombre");
-        String telefono = validarTelefono(scanner);
-        String correo = validarCorreo(scanner);
-        String usuario = validarNombre(scanner, "nombre de usuario");
-        String contraseña = validarContraseña(scanner);
-
-        int codSocio = validarCodigoGenerado(99999999, "usuarios", "cod_socio");
-        int codUsuario = validarCodigoGenerado(99999999, "usuarios", "cod_usuario");
-
-        try (Connection conn = connectMySQL()) {
-            // Insertar socio
-            String sql = "INSERT INTO usuarios (cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario, contraseña) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setInt(1, codUsuario);
-                stmt.setInt(2, codSocio);
-                stmt.setString(3, dni);
-                stmt.setString(4, nombre);
-                stmt.setString(5, telefono);
-                stmt.setString(6, correo);
-                stmt.setString(7, usuario);
-                stmt.setString(8, contraseña);
-
-                int filas = stmt.executeUpdate();
-                if (filas > 0) {
-                    System.out.println("Socio agregado correctamente con código de socio: " + codSocio);
-                } else {
-                    System.out.println("Error al insertar el socio.");
-                }
-            }
-
-        } catch (SQLException e) {
-            System.out.println("Error de conexión o SQL:");
-            e.printStackTrace();
-        }
     }
 
     /// Validadores ///
