@@ -3,6 +3,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.sql.Statement;
 
@@ -103,15 +105,12 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Bajas.");
 
-                    // TODO Change validarISBN para que encaje más como autores y no sea obligatorio
-                    // TODO introducir algo valido
-                    String codLibroBaja = validarISBN(scanner, false);
-
-                    try (Connection conn = connectMySQL()) {
-                        borrarLibro(conn, codLibroBaja);
-                    } catch (SQLException e) {
-                        System.out.println("Error de conexión o SQL:");
-                        e.printStackTrace();
+                    System.out.print("Introduce el ISBN del libro (13 dígitos): ");
+                    String isbn = scanner.nextLine().trim();
+                    if (isbn.isEmpty() || !isbn.matches("\\d{13}")) {
+                        System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
+                    } else {
+                        borrarLibro(connectMySQL(), isbn);
                     }
 
                     break; // Se queda en el submenú para seguir eligiendo
@@ -120,7 +119,12 @@ public class GestionBibliotecaMuskiz {
                     System.out.println("Has elegido: Modificaciones.");
 
                     // Solicitar el ISBN del libro a modificar
-                    String isbnModificar = validarISBN(scanner, false);
+                    System.out.print("Introduce el ISBN del libro (13 dígitos): ");
+                    String isbnModificar = scanner.nextLine().trim();
+                    if (isbnModificar.isEmpty() || !isbnModificar.matches("\\d{13}")) {
+                        System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
+                        continue; // Volver a preguntar si el formato es incorrecto
+                    }
 
                     // Conectar a la base de datos
                     try (Connection conn = connectMySQL()) {
@@ -271,7 +275,35 @@ public class GestionBibliotecaMuskiz {
                 case "3":
                     System.out.println("Has elegido: Modificaciones.");
 
-                    String codAutorModificar = validarCodigoAutor(scanner);
+                    System.out.print("Introduce el código del autor a eliminar: ");
+                    String codAutorModificar = scanner.nextLine().trim();
+                    if (codAutorModificar.isEmpty()) {
+                        System.out.println("El código no puede estar vacío.");
+                        continue;
+                    } else if (!codAutorModificar.matches("\\d+")) {
+                        System.out.println("El código debe ser numérico.");
+                        continue;
+                    } else {
+                        // Conectar a la base de datos
+                        try (Connection conn = connectMySQL()) {
+                            // Verificar si el autor existe
+                            String checkSql = "SELECT * FROM autores WHERE cod_autor = ?";
+                            try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                                checkStmt.setInt(1, Integer.parseInt(codAutorModificar));
+                                ResultSet rs = checkStmt.executeQuery();
+
+                                if (!rs.next()) {
+                                    System.out.println(
+                                            "No se encontró un autor con el código proporcionado. Inténtalo de nuevo.");
+                                    continue;
+                                }
+                            }
+                        } catch (SQLException e) {
+                            System.out.println("Error de conexión o SQL:");
+                            e.printStackTrace();
+                            continue;
+                        }
+                    }
 
                     // Mantener la conexión abierta para el menú de modificación
                     try (Connection conn = connectMySQL()) {
@@ -830,7 +862,7 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
-    // Actualizar numero de copias de la tabla Libros
+    // Actualizar numero de ejemplares de la tabla Libros
     private static void actualizarNumeroCopias(int codLibro) {
         String updateLibrosSql = "UPDATE libros SET n_copias = (SELECT COUNT(*) FROM ejemplares WHERE cod_libro = ?) WHERE cod_libro = ?";
         try (Connection conn = connectMySQL()) {
@@ -871,18 +903,107 @@ public class GestionBibliotecaMuskiz {
     // Modificar numero de copias tabla Libros
     private static void modificarNumeroCopias(Connection conn, String isbnModificar, Scanner scanner) {
         int nCopiasModificar = validarNumeroCopias(scanner);
-        String updateCopiasSql = "UPDATE libros SET n_copias = ? WHERE isbn = ?";
-        try (PreparedStatement updateCopiasStmt = conn.prepareStatement(updateCopiasSql)) {
-            updateCopiasStmt.setInt(1, nCopiasModificar);
-            updateCopiasStmt.setString(2, isbnModificar);
-            int filasAfectadas = updateCopiasStmt.executeUpdate();
-            if (filasAfectadas > 0) {
-                System.out.println("Número de copias actualizado correctamente.");
-            } else {
-                System.out.println("Error al actualizar el número de copias.");
+        int nCopiasActuales = obtenerNumeroCopiasActuales(conn, isbnModificar);
+
+        if (nCopiasActuales == -1) {
+            System.out.println("Error al obtener el número actual de copias.");
+            return;
+        }
+
+        if (nCopiasModificar > nCopiasActuales) {
+            // Añadir ejemplares
+            int copiasAAgregar = nCopiasModificar - nCopiasActuales;
+            agregarEjemplares(obtenerCodLibroPorIsbn(isbnModificar), copiasAAgregar);
+            nCopiasActuales = obtenerNumeroCopiasActuales(conn, isbnModificar);
+            System.out.println(
+                    "Se han añadido " + copiasAAgregar + " copias. Número de copias actual: " + nCopiasActuales);
+        } else if (nCopiasModificar < nCopiasActuales) {
+            // Eliminar ejemplares
+            int copiasAEliminar = nCopiasActuales - nCopiasModificar;
+            eliminarEjemplares(conn, obtenerCodLibroPorIsbn(isbnModificar), copiasAEliminar);
+            nCopiasActuales = obtenerNumeroCopiasActuales(conn, isbnModificar);
+            System.out.println(
+                    "Se han eliminado " + copiasAEliminar + " copias. Número de copias actual: " + nCopiasActuales);
+        } else {
+            System.out.println("El número de copias es el mismo, no se realizaron cambios.");
+        }
+
+        // Actualizar el número de ejemplares en la tabla libros
+        actualizarNumeroCopias(obtenerCodLibroPorIsbn(isbnModificar));
+    }
+
+    // Obtener numero de copias actuales para modificar numero de copias
+    private static int obtenerNumeroCopiasActuales(Connection conn, String isbn) {
+        String query = "SELECT COUNT(*) FROM ejemplares WHERE cod_libro = (SELECT cod_libro FROM libros WHERE isbn = ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, isbn);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
             }
         } catch (SQLException e) {
-            System.out.println("Error al actualizar el número de copias: " + e.getMessage());
+            System.out.println("Error al obtener el número de copias: " + e.getMessage());
+        }
+        return -1;
+    }
+
+    // Eliminar numero de ejemplares segun lo que se indique en el update
+    private static void eliminarEjemplares(Connection conn, int codLibro, int cantidadAEliminar) {
+        // Primero, obtenemos los ejemplares que se pueden eliminar
+        String selectEjemplaresSql = "SELECT cod_ejemplar FROM ejemplares WHERE cod_libro = ? " +
+                "AND cod_ejemplar NOT IN (SELECT cod_ejemplar FROM prestamos WHERE fecha_devolucion IS NULL) LIMIT ?";
+
+        try (PreparedStatement selectEjemplaresStmt = conn.prepareStatement(selectEjemplaresSql)) {
+            selectEjemplaresStmt.setInt(1, codLibro);
+            selectEjemplaresStmt.setInt(2, cantidadAEliminar);
+            ResultSet rs = selectEjemplaresStmt.executeQuery();
+
+            List<Integer> ejemplaresAEliminar = new ArrayList<>();
+            while (rs.next()) {
+                ejemplaresAEliminar.add(rs.getInt("cod_ejemplar"));
+            }
+
+            // Si no hay ejemplares para eliminar, salimos
+            if (ejemplaresAEliminar.isEmpty()) {
+                System.out.println("No hay ejemplares disponibles para eliminar.");
+                return;
+            }
+
+            // Borrar los préstamos asociados a los ejemplares que se van a eliminar
+            String deletePrestamosSql = "DELETE FROM prestamos WHERE cod_ejemplar IN (";
+            for (int i = 0; i < ejemplaresAEliminar.size(); i++) {
+                deletePrestamosSql += "?";
+                if (i < ejemplaresAEliminar.size() - 1) {
+                    deletePrestamosSql += ",";
+                }
+            }
+            deletePrestamosSql += ")";
+
+            try (PreparedStatement deletePrestamosStmt = conn.prepareStatement(deletePrestamosSql)) {
+                for (int i = 0; i < ejemplaresAEliminar.size(); i++) {
+                    deletePrestamosStmt.setInt(i + 1, ejemplaresAEliminar.get(i));
+                }
+                deletePrestamosStmt.executeUpdate();
+            }
+
+            // Ahora, borrar los ejemplares
+            String deleteEjemplaresSql = "DELETE FROM ejemplares WHERE cod_ejemplar IN (";
+            for (int i = 0; i < ejemplaresAEliminar.size(); i++) {
+                deleteEjemplaresSql += "?";
+                if (i < ejemplaresAEliminar.size() - 1) {
+                    deleteEjemplaresSql += ",";
+                }
+            }
+            deleteEjemplaresSql += ")";
+
+            try (PreparedStatement deleteEjemplaresStmt = conn.prepareStatement(deleteEjemplaresSql)) {
+                for (int i = 0; i < ejemplaresAEliminar.size(); i++) {
+                    deleteEjemplaresStmt.setInt(i + 1, ejemplaresAEliminar.get(i));
+                }
+                deleteEjemplaresStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar ejemplares: " + e.getMessage());
         }
     }
 
@@ -1370,47 +1491,6 @@ public class GestionBibliotecaMuskiz {
             }
         } while (valoracion == 0);
         return valoracion;
-    }
-
-    // Validar codigo autor: numerico y exista
-    private static String validarCodigoAutor(Scanner scanner) {
-        String codAutorModificar = "";
-        boolean autorValido = false;
-
-        // Bucle para solicitar el código del autor hasta que sea válido
-        while (!autorValido) {
-            System.out.print("Introduce el código del autor a modificar: ");
-            codAutorModificar = scanner.nextLine().trim();
-
-            // Validar que el código no esté vacío y sea numérico
-            if (codAutorModificar.isEmpty()) {
-                System.out.println("El código no puede estar vacío.");
-            } else if (!codAutorModificar.matches("\\d+")) {
-                System.out.println("El código debe ser numérico.");
-            } else {
-                // Conectar a la base de datos
-                try (Connection conn = connectMySQL()) {
-                    // Verificar si el autor existe
-                    String checkSql = "SELECT * FROM autores WHERE cod_autor = ?";
-                    try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                        checkStmt.setInt(1, Integer.parseInt(codAutorModificar));
-                        ResultSet rs = checkStmt.executeQuery();
-
-                        if (rs.next()) {
-                            autorValido = true; // Autor encontrado, salir del bucle
-                        } else {
-                            System.out.println(
-                                    "No se encontró un autor con el código proporcionado. Inténtalo de nuevo.");
-                        }
-                    }
-                } catch (SQLException e) {
-                    System.out.println("Error de conexión o SQL:");
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return codAutorModificar; // Retorna el código del autor si es válido
     }
 
     // Validar inicio de sesión de usuario
