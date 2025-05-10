@@ -28,7 +28,8 @@ public class GestionBibliotecaMuskiz {
                 System.out.println("1. Trabajar con libros.");
                 System.out.println("2. Trabajar con autores.");
                 System.out.println("3. Trabajar con préstamos.");
-                System.out.println("4. Finalizar programa.");
+                System.out.println("4. Trabajar con socios.");
+                System.out.println("5. Finalizar programa.");
                 System.out.print("¿Con qué desea trabajar? ");
 
                 // Leer entrada del usuario
@@ -52,6 +53,11 @@ public class GestionBibliotecaMuskiz {
                         break;
 
                     case "4":
+                        System.out.println("Ha elegido trabajar con socios.");
+                        mostrarMenuSocios(scanner); // Llamar submenú préstamos
+                        break;
+
+                    case "5":
                         System.out.println("Gracias por usar el gestor. ¡Hasta pronto!");
                         scanner.close(); // Cerramos recursos
                         try {
@@ -561,6 +567,59 @@ public class GestionBibliotecaMuskiz {
 
     }
 
+
+    // Submenú socio
+    public static void mostrarMenuSocios(Scanner scanner) {
+        boolean continuar = true; // Variable para controlar el bucle
+
+        while (continuar) {
+            System.out.println("\n--- Menú de Socios ---");
+            System.out.println("1. Añadir socio.");
+            System.out.println("2. Borrar socio.");
+            System.out.println("3. Modificar socio.");
+            System.out.println("4. Consultar socio.");
+            System.out.println("5. Regresar al menú principal.");
+            System.out.println("Seleccione una opción:");
+
+            // Leer opción usuario
+            String opcionUsuario = scanner.nextLine();
+
+            // Evaluar opción
+            switch (opcionUsuario) {
+                case "1":
+                    System.out.println("Has elegido: Añadir socio.");
+                    agregarSocio(scanner);
+                    break;
+
+                case "2":
+                    System.out.println("Has elegido: Borrar socio.");
+                    
+                  
+                    break;
+                
+                case "3":
+                    System.out.println("Has elegido: Modificar socio.");
+
+                    break;
+                   
+                case "4":
+                    System.out.println("Has elegido: Consultar socio.");
+                  
+                    
+                    break;
+
+                case "5":
+                    System.out.println("\nVolviendo al menú principal...\n");
+                    continuar = false; // Cambia la variable para salir del bucle
+                    break;
+
+                default:
+                    System.out.println("Opción no válida en el menú de socios. Intente nuevamente.\n");
+            }
+        }
+
+    }
+
     /// FUNCIONES ///
     // Conexión a la base de datos
     public static Connection connectMySQL() {
@@ -921,21 +980,21 @@ public class GestionBibliotecaMuskiz {
 
     // Consultar tabla Libros filtrando valoración
     public static void consultarLibrosPorValoracion(Connection conn, int valoracionBuscar) {
-        String sql = "SELECT * FROM libros WHERE valoracion = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, valoracionBuscar);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                System.out.println("Código: " + rs.getInt("cod_libro") +
-                        ", ISBN: " + rs.getString("isbn") +
-                        ", Título: " + rs.getString("titulo") +
-                        ", Copias: " + rs.getInt("n_copias") +
-                        ", Valoración: " + rs.getInt("valoracion"));
-            }
-        } catch (SQLException e) {
-            System.out.println("Error al consultar por valoración: " + e.getMessage());
+    String sql = "SELECT * FROM libros WHERE valoracion = ?";
+    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        stmt.setInt(1, valoracionBuscar);
+        ResultSet rs = stmt.executeQuery();
+        while (rs.next()) {
+            System.out.println("Código: " + rs.getInt("cod_libro") +
+                    ", ISBN: " + rs.getString("isbn") +
+                    ", Título: " + rs.getString("titulo") +
+                    ", Copias: " + rs.getInt("n_copias") +
+                    ", Valoración: " + rs.getInt("valoracion"));
         }
+    } catch (SQLException e) {
+        System.out.println("Error al consultar por valoración: " + e.getMessage());
     }
+}
 
     // Alta tabla Autores
     private static void agregarAutor(Scanner scanner) {
@@ -1105,6 +1164,104 @@ public class GestionBibliotecaMuskiz {
         }
         return true; // Si se encontró al menos un autor
     }
+
+     // Alta tabla socios
+    private static void agregarSocio(Scanner scanner) {
+
+        String dni = validarDNI(scanner);
+        String nombre = validarNombre(scanner, "nombre");
+        String telefono = validarTelefono(scanner);
+        String correo = validarCorreo(scanner);
+        String usuario = validarNombre(scanner, "nombre de usuario");
+        String contraseña = validarContraseña(scanner);
+
+        int codSocio;
+        int codUsuario;
+        boolean codUnico = false;
+
+        try (Connection conn = connectMySQL()) {
+
+            // Generar codigos únicos
+            do {
+                codSocio = generarCodigo(99999999);
+                codUsuario = generarCodigo(99999999);
+
+                String checkSql = "SELECT COUNT(*) FROM usuarios WHERE cod_socio = ? OR cod_usuario = ?";
+                try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                    checkStmt.setInt(1, codSocio);
+                    checkStmt.setInt(2, codUsuario);
+                    ResultSet rs = checkStmt.executeQuery();
+                    if (rs.next() && rs.getInt(1) == 0) {
+                        codUnico = true;
+                    }
+                }
+            } while (!codUnico);
+
+        // Insertar socio
+        String sql = "INSERT INTO usuarios (cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario, contraseña) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setInt(1, codUsuario);
+                stmt.setInt(2, codSocio);
+                stmt.setString(3, dni);
+                stmt.setString(4, nombre);
+                stmt.setString(5, telefono);
+                stmt.setString(6, correo);
+                stmt.setString(7, usuario);
+                stmt.setString(8, contraseña);
+
+                int filas = stmt.executeUpdate();
+                if (filas > 0) {
+                    System.out.println("Socio agregado correctamente con código de socio: " + codSocio);
+                } else {
+                    System.out.println("Error al insertar el socio.");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+    }
+
+    private static String validarDNI(Scanner scanner) {
+        String dni;
+        do {
+            System.out.print("Introduce el DNI (formato 8 números y una letra): ");
+            dni = scanner.nextLine().trim().toUpperCase();
+        } while (!dni.matches("\\d{8}[A-Z]"));
+        return dni;
+    }
+
+
+    private static String validarTelefono(Scanner scanner) {
+        String telefono;
+        do {
+            System.out.print("Introduce el teléfono (9 dígitos): ");
+            telefono = scanner.nextLine().trim();
+        } while (!telefono.matches("\\d{9}"));
+        return telefono;
+    }
+
+    private static String validarCorreo(Scanner scanner) {
+        String correo;
+        do {
+            System.out.print("Introduce el correo electrónico: ");
+            correo = scanner.nextLine().trim();
+        } while (!correo.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$"));
+        return correo;
+    }
+
+    private static String validarContraseña(Scanner scanner) {
+        String pass;
+        do {
+            System.out.print("Introduce una contraseña (mínimo 4 caracteres): ");
+            pass = scanner.nextLine().trim();
+        } while (pass.length() < 4);
+        return pass;
+    }
+
+
 
     // Realizar préstamo de un libro
     public static void realizarPrestamo(Connection conn, String codLibro, String nombreUsuario) {
