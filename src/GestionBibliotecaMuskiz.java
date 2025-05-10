@@ -103,7 +103,9 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Bajas.");
 
-                    String codLibroBaja = validarISBN(scanner);
+                    // TODO Change validarISBN para que encaje más como autores y no sea obligatorio
+                    // TODO introducir algo valido
+                    String codLibroBaja = validarISBN(scanner, false);
 
                     try (Connection conn = connectMySQL()) {
                         borrarLibro(conn, codLibroBaja);
@@ -118,7 +120,7 @@ public class GestionBibliotecaMuskiz {
                     System.out.println("Has elegido: Modificaciones.");
 
                     // Solicitar el ISBN del libro a modificar
-                    String isbnModificar = validarISBN(scanner);
+                    String isbnModificar = validarISBN(scanner, false);
 
                     // Conectar a la base de datos
                     try (Connection conn = connectMySQL()) {
@@ -130,7 +132,7 @@ public class GestionBibliotecaMuskiz {
 
                             if (!rs.next()) {
                                 System.out.println("No se encontró un libro con el ISBN proporcionado.");
-                                return; // Salir si no se encuentra el libro
+                                continue; // Salir si no se encuentra el libro
                             }
 
                             // Menú de modificación
@@ -203,7 +205,7 @@ public class GestionBibliotecaMuskiz {
                             break;
 
                         case "2":
-                            String isbnBuscar = validarISBN(scanner);
+                            String isbnBuscar = validarISBN(scanner, false);
                             consultarLibroPorISBN(connectMySQL(), isbnBuscar);
                             break;
 
@@ -269,7 +271,7 @@ public class GestionBibliotecaMuskiz {
                 case "3":
                     System.out.println("Has elegido: Modificaciones.");
 
-                    String codAutorModificar = validarCodigo(scanner);
+                    String codAutorModificar = validarCodigoAutor(scanner);
 
                     // Mantener la conexión abierta para el menú de modificación
                     try (Connection conn = connectMySQL()) {
@@ -410,7 +412,7 @@ public class GestionBibliotecaMuskiz {
                             switch (opcionConsultar) {
                                 case "1":
                                     // Realizar préstamo
-                                    String codLibro = validarISBN(scanner);
+                                    String codLibro = validarISBN(scanner, false);
                                     String nombreUsuario = validarNombre(scanner, "nombre del usuario");
                                     realizarPrestamo(connectMySQL(), codLibro, nombreUsuario);
                                     break;
@@ -446,7 +448,7 @@ public class GestionBibliotecaMuskiz {
                             switch (opcionConsultar) {
                                 case "1":
                                     // Realizar devolución
-                                    String codLibro = validarISBN(scanner);
+                                    String codLibro = validarISBN(scanner, false);
                                     realizarDevolucion(connectMySQL(), codLibro);
                                     break;
 
@@ -567,7 +569,6 @@ public class GestionBibliotecaMuskiz {
 
     }
 
-
     // Submenú socio
     public static void mostrarMenuSocios(Scanner scanner) {
         boolean continuar = true; // Variable para controlar el bucle
@@ -593,19 +594,17 @@ public class GestionBibliotecaMuskiz {
 
                 case "2":
                     System.out.println("Has elegido: Borrar socio.");
-                    
-                  
+
                     break;
-                
+
                 case "3":
                     System.out.println("Has elegido: Modificar socio.");
 
                     break;
-                   
+
                 case "4":
                     System.out.println("Has elegido: Consultar socio.");
-                  
-                    
+
                     break;
 
                 case "5":
@@ -666,29 +665,15 @@ public class GestionBibliotecaMuskiz {
     private static void agregarLibro(Scanner scanner) {
         System.out.println("Has elegido: Altas.");
 
-        String isbn = validarISBN(scanner);
+        String isbn = validarISBN(scanner, true);
         String titulo = validarNombre(scanner, "título del libro");
         int nCopias = validarNumeroCopias(scanner);
         int valoracion = validarValoracion(scanner);
 
         // Generar cod_libro aleatorio único
-        int codLibro;
-        boolean codUnico = false;
+        int codLibro = validarCodigoGenerado(99999999, "libros", "cod_libro");
 
         try (Connection conn = connectMySQL()) {
-
-            do {
-                codLibro = generarCodigo(99999999);
-
-                String checkSql = "SELECT COUNT(*) FROM libros WHERE cod_libro = ?";
-                try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                    checkStmt.setInt(1, codLibro);
-                    ResultSet rs = checkStmt.executeQuery();
-                    if (rs.next() && rs.getInt(1) == 0) {
-                        codUnico = true;
-                    }
-                }
-            } while (!codUnico);
 
             // Insertar libro
             String sql = "INSERT INTO libros (cod_libro, isbn, titulo, n_copias, valoracion) VALUES (?, ?, ?, ?, ?)";
@@ -719,21 +704,9 @@ public class GestionBibliotecaMuskiz {
     private static void agregarEjemplares(int codLibro, int nCopias) {
         String sql = "INSERT INTO ejemplares (cod_ejemplar, cod_estado, cod_libro) VALUES (?, ?, ?)";
         int codEjemplar;
-        boolean codUnico = false;
         try (Connection conn = connectMySQL()) {
             for (int i = 0; i < nCopias; i++) {
-                do {
-                    codEjemplar = generarCodigo(99999999);
-
-                    String checkSql = "SELECT COUNT(*) FROM libros WHERE cod_libro = ?";
-                    try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                        checkStmt.setInt(1, codEjemplar);
-                        ResultSet rs = checkStmt.executeQuery();
-                        if (rs.next() && rs.getInt(1) == 0) {
-                            codUnico = true;
-                        }
-                    }
-                } while (!codUnico);
+                codEjemplar = validarCodigoGenerado(99999999, "ejemplares", "cod_ejemplar");
 
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.setInt(1, codEjemplar);
@@ -980,21 +953,21 @@ public class GestionBibliotecaMuskiz {
 
     // Consultar tabla Libros filtrando valoración
     public static void consultarLibrosPorValoracion(Connection conn, int valoracionBuscar) {
-    String sql = "SELECT * FROM libros WHERE valoracion = ?";
-    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-        stmt.setInt(1, valoracionBuscar);
-        ResultSet rs = stmt.executeQuery();
-        while (rs.next()) {
-            System.out.println("Código: " + rs.getInt("cod_libro") +
-                    ", ISBN: " + rs.getString("isbn") +
-                    ", Título: " + rs.getString("titulo") +
-                    ", Copias: " + rs.getInt("n_copias") +
-                    ", Valoración: " + rs.getInt("valoracion"));
+        String sql = "SELECT * FROM libros WHERE valoracion = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, valoracionBuscar);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                System.out.println("Código: " + rs.getInt("cod_libro") +
+                        ", ISBN: " + rs.getString("isbn") +
+                        ", Título: " + rs.getString("titulo") +
+                        ", Copias: " + rs.getInt("n_copias") +
+                        ", Valoración: " + rs.getInt("valoracion"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al consultar por valoración: " + e.getMessage());
         }
-    } catch (SQLException e) {
-        System.out.println("Error al consultar por valoración: " + e.getMessage());
     }
-}
 
     // Alta tabla Autores
     private static void agregarAutor(Scanner scanner) {
@@ -1003,24 +976,9 @@ public class GestionBibliotecaMuskiz {
         String apellido = validarNombre(scanner, "apellido del autor");
 
         // Generar cod_autor aleatorio y comprobar que no exista
-        int codAutor;
-        boolean codUnico = false;
+        int codAutor = validarCodigoGenerado(99999, "autores", "cod_autor");
 
         try (Connection conn = connectMySQL()) {
-
-            do {
-                codAutor = generarCodigo(99999);
-
-                // Verificar unicidad del cod_autor
-                String checkSql = "SELECT COUNT(*) FROM autores WHERE cod_autor = ?";
-                try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                    checkStmt.setInt(1, codAutor);
-                    ResultSet rs = checkStmt.executeQuery();
-                    if (rs.next() && rs.getInt(1) == 0) {
-                        codUnico = true;
-                    }
-                }
-            } while (!codUnico);
 
             int codPais = generarCodigo(3);
 
@@ -1165,7 +1123,7 @@ public class GestionBibliotecaMuskiz {
         return true; // Si se encontró al menos un autor
     }
 
-     // Alta tabla socios
+    // Alta tabla socios
     private static void agregarSocio(Scanner scanner) {
 
         String dni = validarDNI(scanner);
@@ -1175,32 +1133,14 @@ public class GestionBibliotecaMuskiz {
         String usuario = validarNombre(scanner, "nombre de usuario");
         String contraseña = validarContraseña(scanner);
 
-        int codSocio;
-        int codUsuario;
-        boolean codUnico = false;
+        int codSocio = validarCodigoGenerado(99999999, "usuarios", "cod_socio");
+        int codUsuario = validarCodigoGenerado(99999999, "usuarios", "cod_usuario");
 
         try (Connection conn = connectMySQL()) {
-
-            // Generar codigos únicos
-            do {
-                codSocio = generarCodigo(99999999);
-                codUsuario = generarCodigo(99999999);
-
-                String checkSql = "SELECT COUNT(*) FROM usuarios WHERE cod_socio = ? OR cod_usuario = ?";
-                try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                    checkStmt.setInt(1, codSocio);
-                    checkStmt.setInt(2, codUsuario);
-                    ResultSet rs = checkStmt.executeQuery();
-                    if (rs.next() && rs.getInt(1) == 0) {
-                        codUnico = true;
-                    }
-                }
-            } while (!codUnico);
-
-        // Insertar socio
-        String sql = "INSERT INTO usuarios (cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario, contraseña) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            // Insertar socio
+            String sql = "INSERT INTO usuarios (cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario, contraseña) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setInt(1, codUsuario);
                 stmt.setInt(2, codSocio);
                 stmt.setString(3, dni);
@@ -1223,45 +1163,6 @@ public class GestionBibliotecaMuskiz {
             e.printStackTrace();
         }
     }
-
-    private static String validarDNI(Scanner scanner) {
-        String dni;
-        do {
-            System.out.print("Introduce el DNI (formato 8 números y una letra): ");
-            dni = scanner.nextLine().trim().toUpperCase();
-        } while (!dni.matches("\\d{8}[A-Z]"));
-        return dni;
-    }
-
-
-    private static String validarTelefono(Scanner scanner) {
-        String telefono;
-        do {
-            System.out.print("Introduce el teléfono (9 dígitos): ");
-            telefono = scanner.nextLine().trim();
-        } while (!telefono.matches("\\d{9}"));
-        return telefono;
-    }
-
-    private static String validarCorreo(Scanner scanner) {
-        String correo;
-        do {
-            System.out.print("Introduce el correo electrónico: ");
-            correo = scanner.nextLine().trim();
-        } while (!correo.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$"));
-        return correo;
-    }
-
-    private static String validarContraseña(Scanner scanner) {
-        String pass;
-        do {
-            System.out.print("Introduce una contraseña (mínimo 4 caracteres): ");
-            pass = scanner.nextLine().trim();
-        } while (pass.length() < 4);
-        return pass;
-    }
-
-
 
     // Realizar préstamo de un libro
     public static void realizarPrestamo(Connection conn, String codLibro, String nombreUsuario) {
@@ -1359,17 +1260,65 @@ public class GestionBibliotecaMuskiz {
     }
 
     /// Validadores ///
+    // Validar codigo generado unico
+    private static int validarCodigoGenerado(int cantidad, String tabla, String campo) {
+        int codLibro = 0;
+        boolean codUnico = false;
+        try (Connection conn = connectMySQL()) {
+            do {
+                codLibro = generarCodigo(cantidad);
+
+                String checkSql = "SELECT COUNT(*) FROM " + tabla + " WHERE " + campo + " = ?";
+                try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                    checkStmt.setInt(1, codLibro);
+                    ResultSet rs = checkStmt.executeQuery();
+                    if (rs.next() && rs.getInt(1) == 0) {
+                        codUnico = true;
+                    }
+                }
+            } while (!codUnico);
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+        return codLibro;
+    }
+
     // Validar ISBN: exactamente 13 dígitos numéricos
-    private static String validarISBN(Scanner scanner) {
+    private static String validarISBN(Scanner scanner, boolean verificarExistencia) {
         String isbn;
         do {
             System.out.print("Introduce el ISBN del libro (13 dígitos): ");
             isbn = scanner.nextLine().trim();
             if (isbn.isEmpty() || !isbn.matches("\\d{13}")) {
                 System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
+                continue; // Volver a preguntar si el formato es incorrecto
             }
-        } while (isbn.isEmpty() || !isbn.matches("\\d{13}"));
+            if (verificarExistencia && isbnYaExiste(isbn)) {
+                System.out.println("El ISBN ya existe en la base de datos. Por favor, introduce otro ISBN.");
+            }
+        } while (isbn.isEmpty() || !isbn.matches("\\d{13}") || (verificarExistencia && isbnYaExiste(isbn)));
         return isbn;
+    }
+
+    // Método para verificar si el ISBN ya existe en la base de datos
+    private static boolean isbnYaExiste(String isbn) {
+        String query = "SELECT COUNT(*) FROM libros WHERE isbn = ?";
+        try (Connection conn = connectMySQL()) {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(query)) {
+                preparedStatement.setString(1, isbn);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                if (resultSet.next()) {
+                    return resultSet.getInt(1) > 0;
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+        return false;
     }
 
     // Validar nombre: no vacío y no solo numérico
@@ -1423,8 +1372,8 @@ public class GestionBibliotecaMuskiz {
         return valoracion;
     }
 
-    // Validar codigo: numerico y exista
-    private static String validarCodigo(Scanner scanner) {
+    // Validar codigo autor: numerico y exista
+    private static String validarCodigoAutor(Scanner scanner) {
         String codAutorModificar = "";
         boolean autorValido = false;
 
@@ -1519,4 +1468,45 @@ public class GestionBibliotecaMuskiz {
         }
         return 0;
     }
+
+    // Validar DNI: que tenga 8 digitos numericos y una letra al final
+    private static String validarDNI(Scanner scanner) {
+        String dni;
+        do {
+            System.out.print("Introduce el DNI (formato 8 números y una letra): ");
+            dni = scanner.nextLine().trim().toUpperCase();
+        } while (!dni.matches("\\d{8}[A-Z]"));
+        return dni;
+    }
+
+    // Validar telefono: que tenga 9 digitos numericos
+    private static String validarTelefono(Scanner scanner) {
+        String telefono;
+        do {
+            System.out.print("Introduce el teléfono (9 dígitos): ");
+            telefono = scanner.nextLine().trim();
+        } while (!telefono.matches("\\d{9}"));
+        return telefono;
+    }
+
+    // Validar correo: que tenga estructura de correo electronico valido
+    private static String validarCorreo(Scanner scanner) {
+        String correo;
+        do {
+            System.out.print("Introduce el correo electrónico: ");
+            correo = scanner.nextLine().trim();
+        } while (!correo.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$"));
+        return correo;
+    }
+
+    // Validar contraseña: que tenga minimo 4 caracteres
+    private static String validarContraseña(Scanner scanner) {
+        String pass;
+        do {
+            System.out.print("Introduce una contraseña (mínimo 4 caracteres): ");
+            pass = scanner.nextLine().trim();
+        } while (pass.length() < 4);
+        return pass;
+    }
+
 }
