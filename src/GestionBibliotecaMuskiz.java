@@ -316,7 +316,7 @@ public class GestionBibliotecaMuskiz {
                     System.out.println("Has elegido: Consulta de datos.");
                     String opcionConsulta;
                     do {
-                        System.out.println("\n--- CONSULTAR AUTOR ---");
+                        System.out.println("\n--- Consultar Autor ---");
                         System.out.println("1. Todos los datos");
                         System.out.println("2. Filtrar por Nombre de autor");
                         System.out.print("Elige una opción (1 o 2): ");
