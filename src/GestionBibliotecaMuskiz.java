@@ -441,36 +441,11 @@ public class GestionBibliotecaMuskiz {
                 case "1":
                     System.out.println("Has elegido: Prestar Libro.");
 
-                    // Mantener la conexión abierta para el menú de prestar libros
-                    boolean consultaPrestamo = true;
+                    // TODO Solo pedir ISBN, comprobar si esta disponible
+                    String isbnPrestamo = validarISBN(scanner, false);
+                    int codLibro = obtenerCodLibroPorIsbn(isbnPrestamo);
+                    realizarPrestamo(connectMySQL(), codLibro, codUsuario);
 
-                    // Validar inicio de sesión de usuario
-                    while (consultaPrestamo) {
-                        System.out.println("\n--- Menú de Préstamos ---");
-                        System.out.println("1. Realizar préstamo.");
-                        System.out.println("2. Regresar al menú anterior");
-                        System.out.print("Seleccione una opción: ");
-
-                        String opcionConsultar = scanner.nextLine().trim();
-
-                        switch (opcionConsultar) {
-                            case "1":
-                                // Realizar préstamo
-                                String codLibro = validarISBN(scanner, false);
-                                String nombreUsuario = validarNombre(scanner, "nombre del usuario");
-                                realizarPrestamo(connectMySQL(), codLibro, nombreUsuario);
-                                break;
-
-                            case "2":
-                                // Regresar al menú anterior
-                                consultaPrestamo = false;
-                                break;
-
-                            default:
-                                System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
-                                break;
-                        }
-                    }
                     break;
 
                 case "2":
@@ -492,22 +467,22 @@ public class GestionBibliotecaMuskiz {
                             case "1":
                                 // Realizar devolución de un libro
                                 System.out.print("Introduce el ISBN del libro (13 dígitos): ");
-                                String isbn = scanner.nextLine().trim();
-                                if (isbn.isEmpty() || !isbn.matches("\\d{13}")) {
+                                String isbnDevolver = scanner.nextLine().trim();
+                                if (isbnDevolver.isEmpty() || !isbnDevolver.matches("\\d{13}")) {
                                     System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
                                     continue;
                                 }
-                                int codLibro = obtenerCodLibroPorIsbn(isbn);
-                                if (codLibro == -1) {
-                                    System.out.println("No se encontró el libro con ISBN: " + codLibro);
+                                int codLibroDevolver = obtenerCodLibroPorIsbn(isbnDevolver);
+                                if (codLibroDevolver == -1) {
+                                    System.out.println("No se encontró el libro con ISBN: " + codLibroDevolver);
                                 } else {
-                                    realizarDevolucion(connectMySQL(), codLibro, codLibro);
+                                    realizarDevolucion(connectMySQL(), codUsuario, codLibroDevolver);
                                 }
                                 break;
 
                             case "2":
                                 // Realizar todas las devoluciones del usuario
-                                realizarDevoluciones(connectMySQL(), codUsuario);
+                                realizarDevolucion(connectMySQL(), codUsuario);
                                 break;
 
                             case "3":
@@ -1375,13 +1350,13 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Para el submenu Prestamos
-    // TODO Realizar préstamo de un libro
-    public static void realizarPrestamo(Connection conn, String codLibro, String nombreUsuario) {
+    // TODO Realizar préstamo de un libro (Rehacerlo entero esto no sirve para nada)
+    public static void realizarPrestamo(Connection conn, int codLibro, int codUsuario) {
         String insertPrestamo = "INSERT INTO prestamos (cod_ejemplar, cod_usuario) VALUES (?, ?)";
         // Registrar el préstamo en la base de datos
         try (PreparedStatement pstmt = conn.prepareStatement(insertPrestamo)) {
-            pstmt.setString(1, codLibro); // Código del libro
-            pstmt.setString(2, nombreUsuario); // Nombre del usuario
+            pstmt.setInt(1, codLibro); // Código del libro
+            pstmt.setInt(2, codUsuario); // Nombre del usuario
             int filasAfectadas = pstmt.executeUpdate();
             if (filasAfectadas > 0) {
                 System.out.println("Préstamo registrado correctamente.");
@@ -1394,7 +1369,7 @@ public class GestionBibliotecaMuskiz {
         // Actualizar la disponibilidad del libro
         String updateDisponibilidad = "UPDATE libros SET n_copias = n_copias - 1 WHERE cod_libro = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(updateDisponibilidad)) {
-            pstmt.setString(1, codLibro); // Código del libro
+            pstmt.setInt(1, codLibro); // Código del libro
             int filasAfectadas = pstmt.executeUpdate();
             if (filasAfectadas > 0) {
                 System.out.println("Disponibilidad actualizada correctamente.");
@@ -1406,8 +1381,8 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
-    // TODO Devolver libro
-    public static void realizarDevoluciones(Connection conn, int codUsuario) {
+    // Devolver libro
+    public static void realizarDevolucion(Connection conn, int codUsuario) {
         String sqlDevolver = "UPDATE prestamos SET fecha_devolucion = CURRENT_DATE WHERE cod_usuario = ? AND fecha_devolucion IS NULL";
         try (PreparedStatement pstmt = conn.prepareStatement(sqlDevolver)) {
             pstmt.setInt(1, codUsuario);
