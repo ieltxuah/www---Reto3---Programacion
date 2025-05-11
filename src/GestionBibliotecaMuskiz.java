@@ -626,6 +626,50 @@ public class GestionBibliotecaMuskiz {
 
                 case "3":
                     System.out.println("Has elegido: Modificar socio.");
+                    // 1. Pedir y validar el DNI
+                    String dniMod = validarDNI(scanner);
+
+                    // 2. Conectar a la base de datos y verificar si existe el socio
+                    try (Connection conn = connectMySQL()) {
+                        String checkSql = "SELECT * FROM usuarios WHERE dni = ?";
+                        try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                            checkStmt.setString(1, dniMod);
+                            ResultSet rs = checkStmt.executeQuery();
+
+                            if (!rs.next()) {
+                                System.out.println("No se encontró ningún socio con ese DNI.");
+                                break;
+                            }
+                        }
+
+                        // 3. Pedir nuevos valores válidos para los campos modificables
+                        String nuevoNombre = validarNombre(scanner, "nombre del socio");
+                        String nuevoTelefono = validarTelefono(scanner);
+                        String nuevoCorreo = validarCorreo(scanner);
+                        String nuevaContrasena = validarContraseña(scanner);
+
+                        // 4. Ejecutar la actualización
+                        String updateSql = "UPDATE usuarios SET nombre = ?, telefono = ?, correo = ?, contraseña = ? WHERE dni = ?";
+                        try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                            updateStmt.setString(1, nuevoNombre);
+                            updateStmt.setString(2, nuevoTelefono);
+                            updateStmt.setString(3, nuevoCorreo);
+                            updateStmt.setString(4, nuevaContrasena);
+                            updateStmt.setString(5, dniMod);
+
+                            int filas = updateStmt.executeUpdate();
+                            if (filas > 0) {
+                                System.out.println("Socio modificado correctamente.");
+                            } else {
+                                System.out.println("No se pudo modificar el socio.");
+                            }
+                        }
+
+                    } catch (SQLException e) {
+                        System.out.println("Error al modificar el socio:");
+                        e.printStackTrace();
+                    }
+
 
                     break;
 
