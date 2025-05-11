@@ -124,7 +124,7 @@ public class GestionBibliotecaMuskiz {
                     String isbnModificar = scanner.nextLine().trim();
                     if (isbnModificar.isEmpty() || !isbnModificar.matches("\\d{13}")) {
                         System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
-                        continue; // Volver a preguntar si el formato es incorrecto
+                        continue;
                     }
 
                     // Conectar a la base de datos
@@ -476,27 +476,43 @@ public class GestionBibliotecaMuskiz {
                 case "2":
                     System.out.println("Has elegido: Devolver Libro.");
 
-                    boolean consulatrDevolucion = true;
+                    boolean menuDevolucion = true;
 
                     // Validar inicio de sesión de usuario
-                    while (consulatrDevolucion) {
+                    while (menuDevolucion) {
                         System.out.println("\n--- Menú de Devoluciones ---");
-                        System.out.println("1. Realizar préstamo.");
-                        System.out.println("2. Regresar al menú anterior");
+                        System.out.println("1. Devolver un libro prestado.");
+                        System.out.println("2. Devolver todos los libros prestados.");
+                        System.out.println("3. Regresar al menú anterior");
                         System.out.print("Seleccione una opción: ");
 
                         String opcionConsultar = scanner.nextLine().trim();
 
                         switch (opcionConsultar) {
                             case "1":
-                                // Realizar devolución
-                                String codLibro = validarISBN(scanner, false);
-                                realizarDevolucion(connectMySQL(), codLibro);
+                                // Realizar devolución de un libro
+                                System.out.print("Introduce el ISBN del libro (13 dígitos): ");
+                                String isbn = scanner.nextLine().trim();
+                                if (isbn.isEmpty() || !isbn.matches("\\d{13}")) {
+                                    System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
+                                    continue;
+                                }
+                                int codLibro = obtenerCodLibroPorIsbn(isbn);
+                                if (codLibro == -1) {
+                                    System.out.println("No se encontró el libro con ISBN: " + codLibro);
+                                } else {
+                                    realizarDevolucion(connectMySQL(), codLibro, codLibro);
+                                }
                                 break;
 
                             case "2":
+                                // Realizar todas las devoluciones del usuario
+                                realizarDevoluciones(connectMySQL(), codUsuario);
+                                break;
+
+                            case "3":
                                 // Regresar al menú anterior
-                                consulatrDevolucion = false;
+                                menuDevolucion = false;
                                 break;
 
                             default:
@@ -670,7 +686,6 @@ public class GestionBibliotecaMuskiz {
                         e.printStackTrace();
                     }
 
-
                     break;
 
                 case "4":
@@ -716,7 +731,7 @@ public class GestionBibliotecaMuskiz {
 
     // Para el submenu Libros
     // Obtener codigo de libro a partir de isbn
-    private static int obtenerCodLibroPorIsbn(String isbn) {
+    public static int obtenerCodLibroPorIsbn(String isbn) {
         String sql = "SELECT cod_libro FROM libros WHERE isbn = ?";
         try (Connection conn = connectMySQL()) {
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -734,7 +749,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Alta tabla Libros
-    private static void agregarLibro(Scanner scanner) {
+    public static void agregarLibro(Scanner scanner) {
         System.out.println("Has elegido: Altas.");
 
         String isbn = validarISBN(scanner, true);
@@ -820,7 +835,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Borrar prestamos
-    private static void borrarPrestamos(int codLibro) {
+    public static void borrarPrestamos(int codLibro) {
         String deletePrestamosSql = "DELETE FROM prestamos WHERE cod_ejemplar IN (SELECT cod_ejemplar FROM ejemplares WHERE cod_libro = ?)";
         try (Connection conn = connectMySQL()) {
             try (PreparedStatement deletePrestamosStmt = conn.prepareStatement(deletePrestamosSql)) {
@@ -835,7 +850,7 @@ public class GestionBibliotecaMuskiz {
 
     // Borrar prestamos que ya han sido devueltos de un mismo ejemplar, en el caso
     // que haya uno no devuelto, no los borra
-    private static void borrarPrestamosDevueltos(int codLibro) {
+    public static void borrarPrestamosDevueltos(int codLibro) {
         String deletePrestamosSql = "DELETE FROM prestamos \n" + //
                 "WHERE cod_ejemplar IN (\n" + //
                 "    SELECT cod_ejemplar FROM (\n" + //
@@ -861,7 +876,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Borrar ejemplares
-    private static void borrarEjemplares(int codLibro) {
+    public static void borrarEjemplares(int codLibro) {
         String deleteEjemplaresSql = "DELETE FROM ejemplares WHERE cod_libro = ?";
         try (Connection conn = connectMySQL()) {
             try (PreparedStatement deleteEjemplaresStmt = conn.prepareStatement(deleteEjemplaresSql)) {
@@ -875,7 +890,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Borrar ejemplares devueltos
-    private static void borrarEjemplaresDevueltos(int codLibro) {
+    public static void borrarEjemplaresDevueltos(int codLibro) {
         String deleteEjemplaresSql = "DELETE FROM ejemplares WHERE cod_libro = ? AND cod_ejemplar NOT IN (SELECT cod_ejemplar FROM prestamos WHERE fecha_devolucion IS NULL)";
         try (Connection conn = connectMySQL()) {
             try (PreparedStatement deleteEjemplaresStmt = conn.prepareStatement(deleteEjemplaresSql)) {
@@ -889,7 +904,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Borrar libro por isbn
-    private static void borrarLibroPorIsbn(String isbn) {
+    public static void borrarLibroPorIsbn(String isbn) {
         String deleteLibrosSql = "DELETE FROM libros WHERE isbn = ?";
         try (Connection conn = connectMySQL()) {
             try (PreparedStatement deleteLibrosStmt = conn.prepareStatement(deleteLibrosSql)) {
@@ -903,7 +918,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Actualizar numero de ejemplares de la tabla Libros
-    private static void actualizarNumeroCopias(int codLibro) {
+    public static void actualizarNumeroCopias(int codLibro) {
         String updateLibrosSql = "UPDATE libros SET n_copias = (SELECT COUNT(*) FROM ejemplares WHERE cod_libro = ?) WHERE cod_libro = ?";
         try (Connection conn = connectMySQL()) {
             try (PreparedStatement updateLibrosStmt = conn.prepareStatement(updateLibrosSql)) {
@@ -918,7 +933,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Modificar titulo tabla Libros
-    private static void modificarTitulo(Connection conn, String isbnModificar, Scanner scanner) {
+    public static void modificarTitulo(Connection conn, String isbnModificar, Scanner scanner) {
         System.out.print("Introduce el nuevo título del libro: ");
         String nuevoTitulo = scanner.nextLine().trim();
         if (!nuevoTitulo.isEmpty() && !nuevoTitulo.matches("\\d+")) {
@@ -941,7 +956,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Modificar numero de copias tabla Libros
-    private static void modificarNumeroCopias(Connection conn, String isbnModificar, Scanner scanner) {
+    public static void modificarNumeroCopias(Connection conn, String isbnModificar, Scanner scanner) {
         int nCopiasModificar = validarNumeroCopias(scanner);
         int nCopiasActuales = obtenerNumeroCopiasActuales(conn, isbnModificar);
 
@@ -973,7 +988,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Obtener numero de copias actuales para modificar numero de copias
-    private static int obtenerNumeroCopiasActuales(Connection conn, String isbn) {
+    public static int obtenerNumeroCopiasActuales(Connection conn, String isbn) {
         String query = "SELECT COUNT(*) FROM ejemplares WHERE cod_libro = (SELECT cod_libro FROM libros WHERE isbn = ?)";
         try (PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, isbn);
@@ -988,7 +1003,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Eliminar numero de ejemplares segun lo que se indique en el update
-    private static void eliminarEjemplares(Connection conn, int codLibro, int cantidadAEliminar) {
+    public static void eliminarEjemplares(Connection conn, int codLibro, int cantidadAEliminar) {
         // Primero, obtenemos los ejemplares que se pueden eliminar
         String selectEjemplaresSql = "SELECT cod_ejemplar FROM ejemplares WHERE cod_libro = ? " +
                 "AND cod_ejemplar NOT IN (SELECT cod_ejemplar FROM prestamos WHERE fecha_devolucion IS NULL) LIMIT ?";
@@ -1048,7 +1063,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Modificar valoracion tabla Libros
-    private static void modificarValoracion(Connection conn, String isbnModificar, Scanner scanner) {
+    public static void modificarValoracion(Connection conn, String isbnModificar, Scanner scanner) {
         int valoracionModificar = validarValoracion(scanner);
         String updateValoracionSql = "UPDATE libros SET valoracion = ? WHERE isbn = ?";
         try (PreparedStatement updateValoracionStmt = conn.prepareStatement(updateValoracionSql)) {
@@ -1132,7 +1147,7 @@ public class GestionBibliotecaMuskiz {
 
     // Para el submenu Autores
     // Alta tabla Autores
-    private static void agregarAutor(Scanner scanner) {
+    public static void agregarAutor(Scanner scanner) {
         System.out.println("Has elegido: Altas.");
         String nombre = validarNombre(scanner, "nombre del autor");
         String apellido = validarNombre(scanner, "apellido del autor");
@@ -1183,7 +1198,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Modificar nombre/apellido tabla Autores
-    private static void modificarNombre(Scanner scanner, Connection conn, String codAutorModificar, String tipo) {
+    public static void modificarNombre(Scanner scanner, Connection conn, String codAutorModificar, String tipo) {
         System.out.print("Introduce el nuevo " + tipo + " del autor: ");
         String nuevoNombre = scanner.nextLine().trim();
         if (!nuevoNombre.isEmpty()) {
@@ -1207,7 +1222,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Modificar codigo pais tabla Autores
-    private static void modificarCodigoPais(Scanner scanner, Connection conn, String codAutorModificar) {
+    public static void modificarCodigoPais(Scanner scanner, Connection conn, String codAutorModificar) {
         System.out.print("Introduce el nuevo código de país: ");
         String codPaisInput = scanner.nextLine().trim();
         if (!codPaisInput.isEmpty() && codPaisInput.matches("\\d+")) {
@@ -1287,7 +1302,7 @@ public class GestionBibliotecaMuskiz {
 
     // Para el submenu Usuarios
     // Alta tabla socios
-    private static void agregarSocio(Scanner scanner) {
+    public static void agregarSocio(Scanner scanner) {
 
         String dni = validarDNI(scanner);
         String nombre = validarNombre(scanner, "nombre");
@@ -1328,7 +1343,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Bajas socio
-    private static void borrarSocioPorDNI(Connection conn, String dni) {
+    public static void borrarSocioPorDNI(Connection conn, String dni) {
         try {
             // Verificar si existe un socio con ese DNI
             String checkSql = "SELECT COUNT(*) FROM usuarios WHERE dni = ?";
@@ -1360,7 +1375,7 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Para el submenu Prestamos
-    // Realizar préstamo de un libro
+    // TODO Realizar préstamo de un libro
     public static void realizarPrestamo(Connection conn, String codLibro, String nombreUsuario) {
         String insertPrestamo = "INSERT INTO prestamos (cod_ejemplar, cod_usuario) VALUES (?, ?)";
         // Registrar el préstamo en la base de datos
@@ -1391,33 +1406,37 @@ public class GestionBibliotecaMuskiz {
         }
     }
 
-    // Devolver libro
-    public static void realizarDevolucion(Connection conn, String codLibro) {
-        String deletePrestamo = "DELETE FROM prestamos WHERE cod_ejemplar = ?";
-        // Registrar la devolución en la base de datos
-        try (PreparedStatement pstmt = conn.prepareStatement(deletePrestamo)) {
-            pstmt.setString(1, codLibro); // Código del libro
-            int filasAfectadas = pstmt.executeUpdate();
-            if (filasAfectadas > 0) {
-                System.out.println("Devolución registrada correctamente.");
+    // TODO Devolver libro
+    public static void realizarDevoluciones(Connection conn, int codUsuario) {
+        String sqlDevolver = "UPDATE prestamos SET fecha_devolucion = CURRENT_DATE WHERE cod_usuario = ? AND fecha_devolucion IS NULL";
+        try (PreparedStatement pstmt = conn.prepareStatement(sqlDevolver)) {
+            pstmt.setInt(1, codUsuario);
+            int filasActualizadas = pstmt.executeUpdate();
+            if (filasActualizadas > 0) {
+                System.out.println("Libros devueltos: " + filasActualizadas);
             } else {
-                System.out.println("Error al registrar la devolución.");
+                System.out.println("No hay libros que devolver");
             }
         } catch (SQLException e) {
             System.out.println("Error al devolver el libro: " + e.getMessage());
         }
-        // Actualizar la disponibilidad del libro
-        String updateDisponibilidad = "UPDATE libros SET n_copias = n_copias + 1 WHERE cod_libro = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(updateDisponibilidad)) {
-            pstmt.setString(1, codLibro); // Código del libro
-            int filasAfectadas = pstmt.executeUpdate();
-            if (filasAfectadas > 0) {
-                System.out.println("Disponibilidad actualizada correctamente.");
+    }
+
+    public static void realizarDevolucion(Connection conn, int codUsuario, int codLibro) {
+        String sqlDevolver = "UPDATE prestamos SET fecha_devolucion = CURRENT_DATE " +
+                "WHERE cod_ejemplar IN (SELECT cod_ejemplar FROM ejemplares WHERE cod_libro = ?) " +
+                "AND cod_usuario = ? AND fecha_devolucion IS NULL";
+        try (PreparedStatement pstmt = conn.prepareStatement(sqlDevolver)) {
+            pstmt.setInt(1, codLibro);
+            pstmt.setInt(2, codUsuario);
+            int filasActualizadas = pstmt.executeUpdate();
+            if (filasActualizadas > 0) {
+                System.out.println("Libros devueltos con ese isbn: " + filasActualizadas);
             } else {
-                System.out.println("Error al actualizar la disponibilidad.");
+                System.out.println("No hay libros que devolver con ese isbn");
             }
         } catch (SQLException e) {
-            System.out.println("Error al actualizar la disponibilidad: " + e.getMessage());
+            System.out.println("Error al devolver el libro: " + e.getMessage());
         }
     }
 
@@ -1698,12 +1717,11 @@ public class GestionBibliotecaMuskiz {
 
                         // Solo considerar días de tardanza si son positivos
                         if (diasTardanza > 0 && diasTardanza < diasDesdeDevolucion) {
-                            diasRetraso = diasTardanza;
+                            diasRetraso = diasTardanza - diasDesdeDevolucion;
                         } else {
                             diasRetraso = 0;
                         }
                     }
-                    System.out.println(diasRetraso);
 
                     // Calcular la penalización para este préstamo
                     int penalizacion = calcularPenalizacionPorRetraso(diasRetraso);
@@ -1797,13 +1815,12 @@ public class GestionBibliotecaMuskiz {
                                 - fechaDevolucion.getTime()) / (1000 * 60 * 60 * 24));
 
                         // Solo considerar días de tardanza si son positivos
-                        if (diasTardanza > 0 && diasTardanza < diasDesdeDevolucion) {
-                            diasRetraso = diasTardanza;
+                        if (diasTardanza > 0 && diasTardanza > diasDesdeDevolucion) {
+                            diasRetraso = diasTardanza - diasDesdeDevolucion;
                         } else {
                             diasRetraso = 0;
                         }
                     }
-                    System.out.println(diasRetraso);
 
                     // Retener la penalización más alta
                     if (diasRetraso > maxDiasRetraso) {
