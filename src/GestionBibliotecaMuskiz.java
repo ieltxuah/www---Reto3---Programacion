@@ -77,7 +77,7 @@ public class GestionBibliotecaMuskiz {
                         System.out.println("Opción no válida. Por favor, intente de nuevo.\n");
                         break; // Volver a preguntar
                 }
-            } while (!opcion.equals("4")); // Continuar hasta que el usuario elija finalizar
+            } while (!opcion.equals("5")); // Continuar hasta que el usuario elija finalizar
         }
     }
 
@@ -665,6 +665,35 @@ public class GestionBibliotecaMuskiz {
 
                 case "4":
                     System.out.println("Has elegido: Consultar socio.");
+                    String opcionConsulta;
+                    do {
+                        System.out.println("\n--- Consultar Socio ---");
+                        System.out.println("1. Todos los datos");
+                        System.out.println("2. Buscar por DNI del socio");
+                        System.out.print("Elige una opción (1 o 2): ");
+                        opcionConsulta = scanner.nextLine().trim();
+
+                        if (!opcionConsulta.equals("1") && !opcionConsulta.equals("2")) {
+                            System.out.println("Opción no válida. Por favor elige 1 o 2.");
+                        }
+                    } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2"));
+
+                    switch (opcionConsulta) {
+                        case "1":
+                            // Consulta todos los socios
+                            consultarSocios(connectMySQL());
+                            break;
+
+                        case "2":
+                            // Pedir DNI válido
+                            String dniConsulta = validarDNI(scanner);
+
+                            // Llamar a función de consulta por DNI
+                            if (!consultarSocioPorDNI(connectMySQL(), dniConsulta)) {
+                                System.out.println("No se encontró ningún socio con el DNI: " + dniConsulta);
+                            }
+                            break;
+                    }
 
                     break;
 
@@ -675,6 +704,7 @@ public class GestionBibliotecaMuskiz {
 
                 default:
                     System.out.println("Opción no válida en el menú de socios. Intente nuevamente.\n");
+                    break;
             }
         }
 
@@ -1348,6 +1378,71 @@ public class GestionBibliotecaMuskiz {
             e.printStackTrace();
         }
     }
+
+    // Consultar socios
+    public static void consultarSocios(Connection conn) {
+        String sql = "SELECT cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario FROM usuarios";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery()) {
+
+            System.out.println("\n--- Lista de Socios ---");
+
+            boolean hayResultados = false;
+            while (rs.next()) {
+                hayResultados = true;
+                System.out.println("Cod_Usuario: " + rs.getInt("cod_usuario"));
+                System.out.println("Cod_Socio: " + rs.getInt("cod_socio"));
+                System.out.println("DNI: " + rs.getString("dni"));
+                System.out.println("Nombre: " + rs.getString("nombre"));
+                System.out.println("Teléfono: " + rs.getString("telefono"));
+                System.out.println("Correo: " + rs.getString("correo"));
+                System.out.println("Usuario: " + rs.getString("usuario"));
+                System.out.println("---------------------------");
+            }
+
+            if (!hayResultados) {
+                System.out.println("No hay socios registrados.");
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al consultar los socios:");
+            e.printStackTrace();
+        }
+    }
+
+    // Consultar socio por DNI
+    public static boolean consultarSocioPorDNI(Connection conn, String dni) {
+    String sql = "SELECT cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario FROM usuarios WHERE dni = ?";
+
+    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        stmt.setString(1, dni);
+        ResultSet rs = stmt.executeQuery();
+
+        if (rs.next()) {
+            System.out.println("\n--- Datos del Socio ---");
+            System.out.println("Cod_Usuario: " + rs.getInt("cod_usuario"));
+            System.out.println("Cod_Socio: " + rs.getInt("cod_socio"));
+            System.out.println("DNI: " + rs.getString("dni"));
+            System.out.println("Nombre: " + rs.getString("nombre"));
+            System.out.println("Teléfono: " + rs.getString("telefono"));
+            System.out.println("Correo: " + rs.getString("correo"));
+            System.out.println("Usuario: " + rs.getString("usuario"));
+            return true;
+        } else {
+            return false;
+        }
+
+    } catch (SQLException e) {
+        System.out.println("Error al consultar el socio:");
+        e.printStackTrace();
+        return false;
+    }
+}
+
+
+
+
 
     // Para el submenu Prestamos
     // TODO Realizar préstamo de un libro (Rehacerlo entero esto no sirve para nada)
