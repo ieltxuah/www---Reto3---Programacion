@@ -441,11 +441,21 @@ public class GestionBibliotecaMuskiz {
                 case "1":
                     System.out.println("Has elegido: Prestar Libro.");
 
-                    // TODO Solo pedir ISBN, comprobar si esta disponible
-                    String isbnPrestamo = validarISBN(scanner, false);
-                    int codLibro = obtenerCodLibroPorIsbn(isbnPrestamo);
-                    realizarPrestamo(connectMySQL(), codLibro, codUsuario);
-
+                    if (validarRealizarPrestamo(codUsuario)) {
+                        // Solo pedir ISBN, comprobar si esta disponible
+                        System.out.print("Introduce el ISBN del libro (13 dígitos): ");
+                        String isbnPrestamo = scanner.nextLine().trim();
+                        if (isbnPrestamo.isEmpty() || !isbnPrestamo.matches("\\d{13}")) {
+                            System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
+                        } else if (isbnYaExiste(isbnPrestamo)) {
+                            int codLibro = obtenerCodLibroPorIsbn(isbnPrestamo);
+                            realizarPrestamo(codLibro, codUsuario);
+                        } else {
+                            System.out.println("No existe el ISBN indicado.");
+                        }
+                    } else {
+                        System.out.println("El usuario ha alcanzado el límite de libros permitidos.");
+                    }
                     break;
 
                 case "2":
@@ -1350,35 +1360,54 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Para el submenu Prestamos
-    // TODO Realizar préstamo de un libro (Rehacerlo entero esto no sirve para nada)
-    public static void realizarPrestamo(Connection conn, int codLibro, int codUsuario) {
-        String insertPrestamo = "INSERT INTO prestamos (cod_ejemplar, cod_usuario) VALUES (?, ?)";
-        // Registrar el préstamo en la base de datos
-        try (PreparedStatement pstmt = conn.prepareStatement(insertPrestamo)) {
-            pstmt.setInt(1, codLibro); // Código del libro
-            pstmt.setInt(2, codUsuario); // Nombre del usuario
-            int filasAfectadas = pstmt.executeUpdate();
-            if (filasAfectadas > 0) {
-                System.out.println("Préstamo registrado correctamente.");
-            } else {
-                System.out.println("Error al registrar el préstamo.");
+    // Realizar préstamo de un libro
+    public static void realizarPrestamo(int codLibro, int codUsuario) {
+        int codEjemplar = 0;
+
+        try (Connection conn = connectMySQL()) {
+            // Verificar si hay un ejemplar disponible
+            String queryEjemplar = "SELECT e.cod_ejemplar FROM ejemplares e " +
+                    "LEFT JOIN prestamos p ON e.cod_ejemplar = p.cod_ejemplar " +
+                    "WHERE e.cod_libro = ? AND (p.fecha_devolucion IS NOT NULL OR p.cod_ejemplar IS NULL) " +
+                    "LIMIT 1";
+            try (PreparedStatement stmt = conn.prepareStatement(queryEjemplar)) {
+                stmt.setInt(1, codLibro);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    codEjemplar = rs.getInt("cod_ejemplar");
+                } else {
+                    System.out.println("No hay ejemplares disponibles para este libro.");
+                    return; // Salir del método si no hay ejemplares disponibles
+                }
+            }
+
+            // Verificar si el usuario ya tiene un préstamo activo para el mismo libro
+            String queryPrestamo = "SELECT COUNT(*) FROM prestamos WHERE cod_usuario = ? AND cod_ejemplar = ? AND fecha_devolucion IS NULL";
+            try (PreparedStatement stmt = conn.prepareStatement(queryPrestamo)) {
+                stmt.setInt(1, codUsuario);
+                stmt.setInt(2, codEjemplar);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next() && rs.getInt(1) > 0) {
+                    System.out.println("El usuario ya tiene un préstamo activo para este libro.");
+                    return; // Salir del método si ya tiene un préstamo activo
+                }
+            }
+
+            // Realizar el préstamo
+            String insertPrestamo = "INSERT INTO prestamos (cod_prestamo, cod_ejemplar, cod_usuario, fecha_prestamo) VALUES (?, ?, ?, CURRENT_DATE)";
+            int codPrestamo = validarCodigoGenerado(9999999, "prestamos", "cod_prestamo");
+            try (PreparedStatement stmt = conn.prepareStatement(insertPrestamo)) {
+                stmt.setInt(1, codPrestamo);
+                stmt.setInt(2, codEjemplar);
+                stmt.setInt(3, codUsuario);
+                stmt.executeUpdate();
+                System.out.println("Préstamo realizado con éxito.");
             }
         } catch (SQLException e) {
-            System.out.println("Error al realizar el préstamo: " + e.getMessage());
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
         }
-        // Actualizar la disponibilidad del libro
-        String updateDisponibilidad = "UPDATE libros SET n_copias = n_copias - 1 WHERE cod_libro = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(updateDisponibilidad)) {
-            pstmt.setInt(1, codLibro); // Código del libro
-            int filasAfectadas = pstmt.executeUpdate();
-            if (filasAfectadas > 0) {
-                System.out.println("Disponibilidad actualizada correctamente.");
-            } else {
-                System.out.println("Error al actualizar la disponibilidad.");
-            }
-        } catch (SQLException e) {
-            System.out.println("Error al actualizar la disponibilidad: " + e.getMessage());
-        }
+
     }
 
     // Devolver libro
@@ -1869,4 +1898,48 @@ public class GestionBibliotecaMuskiz {
         return pass;
     }
 
+    // Validar permitir realizar prestamo
+    private static boolean validarRealizarPrestamo(int codUsuario) {
+        int librosPermitidos = 0;
+        int librosPrestados = 0;
+
+        try (Connection conn = connectMySQL()) {
+            // Verificar la penalización del usuario y cuántos libros puede tener prestados
+            String queryPenalizacion = "SELECT p.cod_penalizacion, p.libros_permitidos " +
+                    "FROM usuarios u " +
+                    "JOIN penalizaciones p ON u.cod_penalizacion = p.cod_penalizacion " +
+                    "WHERE u.cod_usuario = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(queryPenalizacion)) {
+                stmt.setInt(1, codUsuario);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    librosPermitidos = rs.getInt("libros_permitidos");
+                } else {
+                    return false;
+                }
+            }
+
+            // Verificar cuántos libros tiene prestados el usuario
+            String queryLibrosPrestados = "SELECT COUNT(*) FROM prestamos WHERE cod_usuario = ? AND fecha_devolucion IS NULL";
+            try (PreparedStatement stmt = conn.prepareStatement(queryLibrosPrestados)) {
+                stmt.setInt(1, codUsuario);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    librosPrestados = rs.getInt(1);
+                }
+            }
+
+            // Validar si el usuario ha alcanzado el límite de libros permitidos
+            if (librosPrestados >= librosPermitidos) {
+                return false;
+            } else {
+                return true;
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error de conexión o SQL:");
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
