@@ -1394,7 +1394,7 @@ public class GestionBibliotecaMuskiz {
         String sql = "SELECT cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario FROM usuarios";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
 
             System.out.println("\n--- Lista de Socios ---");
 
@@ -1423,36 +1423,32 @@ public class GestionBibliotecaMuskiz {
 
     // Consultar socio por DNI
     public static boolean consultarSocioPorDNI(Connection conn, String dni) {
-    String sql = "SELECT cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario FROM usuarios WHERE dni = ?";
+        String sql = "SELECT cod_usuario, cod_socio, dni, nombre, telefono, correo, usuario FROM usuarios WHERE dni = ?";
 
-    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-        stmt.setString(1, dni);
-        ResultSet rs = stmt.executeQuery();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, dni);
+            ResultSet rs = stmt.executeQuery();
 
-        if (rs.next()) {
-            System.out.println("\n--- Datos del Socio ---");
-            System.out.println("Cod_Usuario: " + rs.getInt("cod_usuario"));
-            System.out.println("Cod_Socio: " + rs.getInt("cod_socio"));
-            System.out.println("DNI: " + rs.getString("dni"));
-            System.out.println("Nombre: " + rs.getString("nombre"));
-            System.out.println("Teléfono: " + rs.getString("telefono"));
-            System.out.println("Correo: " + rs.getString("correo"));
-            System.out.println("Usuario: " + rs.getString("usuario"));
-            return true;
-        } else {
+            if (rs.next()) {
+                System.out.println("\n--- Datos del Socio ---");
+                System.out.println("Cod_Usuario: " + rs.getInt("cod_usuario"));
+                System.out.println("Cod_Socio: " + rs.getInt("cod_socio"));
+                System.out.println("DNI: " + rs.getString("dni"));
+                System.out.println("Nombre: " + rs.getString("nombre"));
+                System.out.println("Teléfono: " + rs.getString("telefono"));
+                System.out.println("Correo: " + rs.getString("correo"));
+                System.out.println("Usuario: " + rs.getString("usuario"));
+                return true;
+            } else {
+                return false;
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al consultar el socio:");
+            e.printStackTrace();
             return false;
         }
-
-    } catch (SQLException e) {
-        System.out.println("Error al consultar el socio:");
-        e.printStackTrace();
-        return false;
     }
-}
-
-
-
-
 
     // Para el submenu Prestamos
     // Realizar préstamo de un libro
