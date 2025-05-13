@@ -11,62 +11,75 @@ import java.sql.Statement;
 
 public class GestionBibliotecaMuskiz {
     public static void main(String[] args) throws Exception {
+        // Limpiar la consola
         System.out.print("\033[H\033[2J");
+
+        // Establecer conexión a la base de datos MySQL
         Connection conn = connectMySQL();
+
+        // Verificar si la conexión fue exitosa
         if (conn != null) {
 
             // Crear objeto scanner
+            // Crear objeto scanner para leer la entrada del usuario
             Scanner scanner = new Scanner(System.in);
             String opcion = ""; // Variable para la opción del menú principal
 
-            // Encabezado
+            // Encabezado del programa
             System.out.println("=========================================================");
             System.out.println("=============== Gestión Biblioteca Muskiz ===============");
             System.out.println("=========================================================");
             System.out.println("Bienvenido al programa Gestor de la Biblioteca de Muskiz");
 
-            // Bucle menú principal
+            // Bucle para mostrar el menú principal
             do {
+                // Mostrar opciones de trabajo
                 System.out.println("Opciones de trabajo:");
                 System.out.println("1. Trabajar con libros.");
                 System.out.println("2. Trabajar con autores.");
                 System.out.println("3. Trabajar con préstamos.");
                 System.out.println("4. Trabajar con socios.");
                 System.out.println("5. Finalizar programa.");
-                System.out.print("¿Con qué desea trabajar? ");
+                System.out.print("Seleccione una opción: ");
 
-                // Leer entrada del usuario
+                // Leer la entrada del usuario
                 opcion = scanner.nextLine();
 
-                // Evaluar opción usuario
+                // Evaluar la opción seleccionada por el usuario
                 switch (opcion) {
                     case "1":
+                        // Opción para trabajar con libros
                         System.out.println("Ha elegido trabajar con libros.");
                         mostrarMenuLibros(scanner); // Llamar submenú libros
                         break;
 
                     case "2":
+                        // Opción para trabajar con autores
                         System.out.println("Ha elegido trabajar con autores.");
                         mostrarMenuAutores(scanner); // Llamar submenú autores
                         break;
 
                     case "3":
+                        // Opción para trabajar con préstamos
                         System.out.println("Ha elegido trabajar con préstamos.");
                         mostrarMenuPrestamos(scanner); // Llamar submenú préstamos
                         break;
 
                     case "4":
+                        // Opción para trabajar con socios
                         System.out.println("Ha elegido trabajar con socios.");
                         mostrarMenuSocios(scanner); // Llamar submenú préstamos
                         break;
 
                     case "5":
+                        // Opción para finalizar el programa
                         System.out.println("Gracias por usar el gestor. ¡Hasta pronto!");
-                        scanner.close(); // Cerramos recursos
+                        scanner.close(); // Cerrar el objeto scanner para liberar recursos
                         try {
-                            conn.close();
-                            System.out.println("Conexión a la base de datos cerrada.");
+                            conn.close(); // Cerrar la conexión a la base de datos
+                            // System.out.println("Conexión a la base de datos cerrada.");
                         } catch (SQLException e) {
+                            // Manejar excepciones al cerrar la conexión
                             System.out.println(
                                     "Error al cerrar la conexión a la base de datos, por favor crea un ticket con el error para solventar el problema: "
                                             + e.getMessage());
@@ -74,18 +87,20 @@ public class GestionBibliotecaMuskiz {
                         break;
 
                     default:
+                        // Opción no válida, solicitar al usuario que intente de nuevo
                         System.out.println("Opción no válida. Por favor, intente de nuevo.\n");
                         break; // Volver a preguntar
                 }
-            } while (!opcion.equals("5")); // Continuar hasta que el usuario elija finalizar
+            } while (!opcion.equals("5")); // Continuar el bucle hasta que el usuario elija finalizar
         }
     }
 
     /// SUBMENUS ///
     // Submenú libros
     public static void mostrarMenuLibros(Scanner scanner) {
-        boolean continuar = true; // Variable para controlar el bucle
+        boolean continuar = true; // Variable para controlar el bucle del submenú
         while (continuar) {
+            // Mostrar opciones del menú de libros
             System.out.println("\n--- Menú de Libros ---");
             System.out.println("1. Altas.");
             System.out.println("2. Bajas.");
@@ -94,34 +109,39 @@ public class GestionBibliotecaMuskiz {
             System.out.println("5. Regresar a menú principal.");
             System.out.print("Seleccione una opción: ");
 
-            // Leer opción usuario
+            // Leer la opción seleccionada por el usuario
             String opcionLibro = scanner.nextLine();
 
-            // Evaluar opción
+            // Evaluar la opción seleccionada
             switch (opcionLibro) {
                 case "1":
+                    // Opción para agregar un nuevo libro
                     agregarLibro(scanner);
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "2":
+                    // Opción para eliminar un libro
                     System.out.println("Has elegido: Bajas.");
 
                     System.out.print("Introduce el ISBN del libro (13 dígitos): ");
-                    String isbn = scanner.nextLine().trim();
+                    String isbn = scanner.nextLine().trim(); // Leer el ISBN del libro a eliminar
+                    // Validar el formato del ISBN
                     if (isbn.isEmpty() || !isbn.matches("\\d{13}")) {
                         System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
                     } else {
+                        // Llamar al método para borrar el libro
                         borrarLibro(connectMySQL(), isbn);
                     }
 
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "3":
+                    // Opción para modificar un libro existente
                     System.out.println("Has elegido: Modificaciones.");
 
-                    // Solicitar el ISBN del libro a modificar
                     System.out.print("Introduce el ISBN del libro (13 dígitos): ");
-                    String isbnModificar = scanner.nextLine().trim();
+                    String isbnModificar = scanner.nextLine().trim(); // Leer el ISBN del libro a modificar
+                    // Validar el formato del ISBN
                     if (isbnModificar.isEmpty() || !isbnModificar.matches("\\d{13}")) {
                         System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
                         continue;
@@ -129,20 +149,22 @@ public class GestionBibliotecaMuskiz {
 
                     // Conectar a la base de datos
                     try (Connection conn = connectMySQL()) {
-                        // Verificar si el libro existe
+                        // Verificar si el libro existe en la base de datos
                         String checkSql = "SELECT * FROM libros WHERE isbn = ?";
                         try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                            checkStmt.setString(1, isbnModificar);
-                            ResultSet rs = checkStmt.executeQuery();
+                            checkStmt.setString(1, isbnModificar); // Establecer el ISBN en la consulta
+                            ResultSet rs = checkStmt.executeQuery(); // Ejecutar la consulta
 
+                            // Comprobar si se encontró el libro
                             if (!rs.next()) {
                                 System.out.println("No se encontró un libro con el ISBN proporcionado.");
                                 continue; // Salir si no se encuentra el libro
                             }
 
                             // Menú de modificación
-                            boolean modificar = true;
+                            boolean modificar = true; // Variable para controlar el bucle de modificación
                             while (modificar) {
+                                // Mostrar opciones de modificación
                                 System.out.println("\n--- Menú de Modificación de Libro ---");
                                 System.out.println("1. Modificar Título");
                                 System.out.println("2. Modificar Número de Copias");
@@ -150,30 +172,33 @@ public class GestionBibliotecaMuskiz {
                                 System.out.println("4. Regresar al menú anterior");
                                 System.out.print("Seleccione una opción: ");
 
+                                // Leer la opción de modificación
                                 String opcionModificar = scanner.nextLine().trim();
 
+                                // Evaluar la opción seleccionada
                                 switch (opcionModificar) {
                                     case "1":
-                                        // Modificar título
+                                        // Modificar título del libro
                                         modificarTitulo(conn, isbnModificar, scanner);
                                         break;
 
                                     case "2":
-                                        // Modificar número de copias
+                                        // Modificar número de copias del libro
                                         modificarNumeroCopias(conn, isbnModificar, scanner);
                                         break;
 
                                     case "3":
-                                        // Modificar valoración
+                                        // Modificar valoración del libro
                                         modificarValoracion(conn, isbnModificar, scanner);
                                         break;
 
                                     case "4":
                                         // Regresar al menú anterior
-                                        modificar = false;
+                                        modificar = false; // Cambiar la variable para salir del bucle
                                         break;
 
                                     default:
+                                        // Opción no válida
                                         System.out
                                                 .println("Opción no válida. Por favor, seleccione una opción válida.");
                                         break;
@@ -181,28 +206,32 @@ public class GestionBibliotecaMuskiz {
                             }
                         }
                     } catch (SQLException e) {
+                        // Manejar excepciones de conexión o SQL
                         System.out.println("Error de conexión o SQL:");
-                        e.printStackTrace();
+                        e.printStackTrace(); // Imprimir el stack trace para depuración
                     }
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "4":
+                    // Opción para consultar datos de libros
                     System.out.println("Has elegido: Consulta de datos.");
                     String opcionConsulta;
                     do {
+                        // Mostrar opciones de consulta
                         System.out.println("\n--- CONSULTAR LIBROS ---");
                         System.out.println("1. Todos los datos");
                         System.out.println("2. Filtrar por ISBN");
                         System.out.println("3. Filtrar por valoración");
                         System.out.print("Elige una opción: ");
-                        opcionConsulta = scanner.nextLine().trim();
+                        opcionConsulta = scanner.nextLine().trim(); // Leer la opción de consulta
 
+                        // Validar la opción seleccionada
                         if (!opcionConsulta.equals("1") && !opcionConsulta.equals("2")) {
                             System.out.println("Opción no válida. Por favor elige del 1 al 3.");
                         }
                     } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2") && !opcionConsulta.equals("3"));
 
-                    // Leer opción usuario
+                    // Leer la opción seleccionada y realizar la consulta correspondiente
                     switch (opcionConsulta) {
                         case "1":
                             // Consulta todos los libros
@@ -210,26 +239,31 @@ public class GestionBibliotecaMuskiz {
                             break;
 
                         case "2":
-                            String isbnBuscar = validarISBN(scanner, false);
+                            // Consultar libro por ISBN
+                            String isbnBuscar = validarISBN(scanner, false); // Validar el ISBN ingresado
                             consultarLibroPorISBN(connectMySQL(), isbnBuscar);
                             break;
 
                         case "3":
-                            int valoracionBuscar = validarValoracion(scanner);
+                            // Consultar libros por valoración
+                            int valoracionBuscar = validarValoracion(scanner); // Validar la valoración ingresada
                             consultarLibrosPorValoracion(connectMySQL(), valoracionBuscar);
                             break;
 
                         default:
+                            // No se espera llegar aquí, pero se incluye para completar el switch
                             break;
                     }
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "5":
+                    // Opción para regresar al menú principal
                     System.out.println("\nVolviendo al menú principal...\n");
                     continuar = false; // Cambia la variable para salir del bucle
                     return; // Sale del submenú y vuelve al menú principal
 
                 default:
+                    // Opción no válida en el menú de libros
                     System.out.println("Opción no válida en el menú de libros. Intente nuevamente.\n");
             }
         }
@@ -237,9 +271,10 @@ public class GestionBibliotecaMuskiz {
 
     // Submenú autores
     public static void mostrarMenuAutores(Scanner scanner) {
-        boolean continuar = true; // Variable para controlar el bucle
+        boolean continuar = true; // Variable para controlar el bucle del submenú
 
         while (continuar) {
+            // Mostrar opciones del menú de autores
             System.out.println("\n--- Menú de Autores ---");
             System.out.println("1. Altas.");
             System.out.println("2. Bajas.");
@@ -248,19 +283,21 @@ public class GestionBibliotecaMuskiz {
             System.out.println("5. Regresar a menú principal.");
             System.out.print("Seleccione una opción: ");
 
-            // Leer opción usuario
+            // Leer la opción seleccionada por el usuario
             String opcionAutor = scanner.nextLine();
 
-            // Evaluar opción
+            // Evaluar la opción seleccionada
             switch (opcionAutor) {
                 case "1":
+                    // Opción para agregar un nuevo autor
                     agregarAutor(scanner);
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "2":
+                    // Opción para eliminar un autor
                     System.out.println("Has elegido: Bajas.");
                     System.out.print("Introduce el código del autor a eliminar: ");
-                    String codAutorBaja = scanner.nextLine().trim();
+                    String codAutorBaja = scanner.nextLine().trim(); // Leer el código del autor a eliminar
                     // Validar que el código no esté vacío y sea numérico
                     if (codAutorBaja.isEmpty()) {
                         System.out.println("El código no puede estar vacío.");
@@ -274,10 +311,12 @@ public class GestionBibliotecaMuskiz {
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "3":
+                    // Opción para modificar un autor existente
                     System.out.println("Has elegido: Modificaciones.");
 
                     System.out.print("Introduce el código del autor a eliminar: ");
-                    String codAutorModificar = scanner.nextLine().trim();
+                    String codAutorModificar = scanner.nextLine().trim(); // Leer el código del autor a modificar
+                    // Validar que el código no esté vacío y sea numérico
                     if (codAutorModificar.isEmpty()) {
                         System.out.println("El código no puede estar vacío.");
                         continue;
@@ -287,12 +326,14 @@ public class GestionBibliotecaMuskiz {
                     } else {
                         // Conectar a la base de datos
                         try (Connection conn = connectMySQL()) {
-                            // Verificar si el autor existe
+                            // Verificar si el autor existe en la base de datos
                             String checkSql = "SELECT * FROM autores WHERE cod_autor = ?";
                             try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+                                // Establecer el código en la consulta
                                 checkStmt.setInt(1, Integer.parseInt(codAutorModificar));
-                                ResultSet rs = checkStmt.executeQuery();
+                                ResultSet rs = checkStmt.executeQuery(); // Ejecutar la consulta
 
+                                // Comprobar si se encontró el autor
                                 if (!rs.next()) {
                                     System.out.println(
                                             "No se encontró un autor con el código proporcionado. Inténtalo de nuevo.");
@@ -300,16 +341,18 @@ public class GestionBibliotecaMuskiz {
                                 }
                             }
                         } catch (SQLException e) {
+                            // Manejar excepciones de conexión o SQL
                             System.out.println("Error de conexión o SQL:");
-                            e.printStackTrace();
+                            e.printStackTrace(); // Imprimir el stack trace para depuración
                             continue;
                         }
                     }
 
                     // Mantener la conexión abierta para el menú de modificación
                     try (Connection conn = connectMySQL()) {
-                        boolean modificar = true;
+                        boolean modificar = true; // Variable para controlar el bucle de modificación
                         while (modificar) {
+                            // Mostrar opciones de modificación
                             System.out.println("\n--- Menú de Modificación de Autor ---");
                             System.out.println("1. Modificar Nombre");
                             System.out.println("2. Modificar Apellido");
@@ -317,61 +360,67 @@ public class GestionBibliotecaMuskiz {
                             System.out.println("4. Regresar al menú anterior");
                             System.out.print("Seleccione una opción: ");
 
-                            String opcionModificar = scanner.nextLine().trim();
+                            String opcionModificar = scanner.nextLine().trim(); // Leer la opción de modificación
 
+                            // Evaluar la opción seleccionada
                             switch (opcionModificar) {
                                 case "1":
-                                    // Modificar nombre
+                                    // Modificar el nombre del autor
                                     modificarNombre(scanner, conn, codAutorModificar, "nombre");
                                     break;
 
                                 case "2":
-                                    // Modificar apellido
+                                    // Modificar el apellido del autor
                                     modificarNombre(scanner, conn, codAutorModificar, "apellido");
                                     break;
 
                                 case "3":
-                                    // Modificar código de país
+                                    // Modificar el código de país del autor
                                     modificarCodigoPais(scanner, conn, codAutorModificar);
 
                                     break;
 
                                 case "4":
                                     // Regresar al menú anterior
-                                    modificar = false;
+                                    modificar = false; // Cambiar la variable para salir del bucle
                                     break;
 
                                 default:
+                                    // Opción no válida
                                     System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
                                     break;
                             }
                         }
                     } catch (SQLException e) {
+                        // Manejar excepciones de conexión o SQL
                         System.out.println("Error de conexión o SQL:");
-                        e.printStackTrace();
+                        e.printStackTrace(); // Imprimir el stack trace para depuración
                     }
 
                     break; // Se queda en el submenú para seguir eligiendo
 
                 case "4":
+                    // Opción para consultar datos de autores
                     System.out.println("Has elegido: Consulta de datos.");
                     String opcionConsulta;
                     do {
+                        // Mostrar opciones de consulta
                         System.out.println("\n--- Consultar Autor ---");
                         System.out.println("1. Todos los datos");
                         System.out.println("2. Filtrar por Nombre de autor");
                         System.out.print("Elige una opción (1 o 2): ");
-                        opcionConsulta = scanner.nextLine().trim();
+                        opcionConsulta = scanner.nextLine().trim(); // Leer la opción de consulta
 
+                        // Validar la opción seleccionada
                         if (!opcionConsulta.equals("1") && !opcionConsulta.equals("2")) {
                             System.out.println("Opción no válida. Por favor elige 1 o 2.");
                         }
                     } while (!opcionConsulta.equals("1") && !opcionConsulta.equals("2"));
 
-                    // Leer opción usuario
+                    // Leer la opción seleccionada y realizar la consulta correspondiente
                     switch (opcionConsulta) {
                         case "1":
-                            // Consulta todos los libros
+                            // Consulta todos los autores
                             consultarAutores(connectMySQL(), 0);
                             break;
 
@@ -379,30 +428,35 @@ public class GestionBibliotecaMuskiz {
                             String nombreAutor;
                             do {
                                 System.out.print("Introduce el nombre del autor a buscar: ");
-                                nombreAutor = scanner.nextLine().trim();
+                                nombreAutor = scanner.nextLine().trim(); // Leer el nombre del autor a buscar
 
+                                // Validar que el nombre no esté vacío y contenga solo letras
                                 if (nombreAutor.isEmpty() || !nombreAutor.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$")) {
                                     System.out.println("Nombre no válido. Debe contener solo letras y no estar vacío.");
                                     nombreAutor = null; // Forzar repetición
                                 }
-                            } while (nombreAutor == null);
+                            } while (nombreAutor == null); // Repetir hasta que se ingrese un nombre válido
 
+                            // Consultar autor por nombre
                             if (!consultarAutorPorNombre(connectMySQL(), nombreAutor)) {
                                 System.out.println("No se encontró el autor con el nombre: " + nombreAutor);
                             }
                             break;
 
                         default:
+                            // No se espera llegar aquí, pero se incluye para completar el switch
                             break;
                     }
                     break;
 
                 case "5":
+                    // Opción para regresar al menú principal
                     System.out.println("\nVolviendo al menú principal...\n");
-                    continuar = false; // Cambia la variable para salir del bucle
+                    continuar = false; // Cambiar la variable para salir del bucle
                     break;
 
                 default:
+                    // Opción no válida en el menú de autores
                     System.out.println("Opción no válida en el menú de autores. Intente nuevamente.\n");
             }
         }
@@ -410,17 +464,21 @@ public class GestionBibliotecaMuskiz {
 
     // Submenú préstamos
     public static void mostrarMenuPrestamos(Scanner scanner) {
+        // Validar inicio de sesión del usuario
         int codUsuario = validarInicioSesion(scanner);
         if (codUsuario == -1) {
+            // Mensaje de error si no se encuentra el usuario
             System.out.println("No se encontró usuario con nombre y contraseña proporcionados. Inténtelo de nuevo.");
-            return;
+            return; // Salir del método si el inicio de sesión falla
         }
 
+        // Comprobar el nivel de penalización y los días restantes
         int nivelPenalizacion = comprobarPenalizacion(codUsuario);
         long diasPenalizacion = diasPenalizacionRestantes(codUsuario);
-        boolean continuar = true; // Variable para controlar el bucle
+        boolean continuar = true; // Variable para controlar el bucle del menú
 
         while (continuar) {
+            // Mostrar información del usuario
             System.out.println("\n--- Datos del Usuario ---");
             System.out.println("- Código de usuario: " + codUsuario);
             System.out.println("- Nivel de penalización: " + nivelPenalizacion);
@@ -433,37 +491,45 @@ public class GestionBibliotecaMuskiz {
             System.out.println("5. Regresar al menú principal.");
             System.out.println("Seleccione una opción:");
 
-            // Leer opción usuario
+            // Leer la opción seleccionada por el usuario
             String opcionPrestamo = scanner.nextLine();
 
-            // Evaluar opción
+            // Evaluar la opción seleccionada
             switch (opcionPrestamo) {
                 case "1":
+                    // Opción para prestar un libro
                     System.out.println("Has elegido: Prestar Libro.");
 
+                    // Validar si el usuario puede realizar un préstamo
                     if (validarRealizarPrestamo(codUsuario)) {
-                        // Solo pedir ISBN, comprobar si esta disponible
+                        // Pedir el ISBN del libro y comprobar si está disponible
                         System.out.print("Introduce el ISBN del libro (13 dígitos): ");
                         String isbnPrestamo = scanner.nextLine().trim();
+                        // Validar el formato del ISBN
                         if (isbnPrestamo.isEmpty() || !isbnPrestamo.matches("\\d{13}")) {
                             System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
                         } else if (isbnYaExiste(isbnPrestamo)) {
+                            // Si el ISBN existe, obtener el código del libro y realizar el préstamo
                             int codLibro = obtenerCodLibroPorIsbn(isbnPrestamo);
                             realizarPrestamo(codLibro, codUsuario);
                         } else {
+                            // Mensaje si el ISBN no existe
                             System.out.println("No existe el ISBN indicado.");
                         }
                     } else {
+                        // Mensaje si el usuario ha alcanzado el límite de libros permitidos
                         System.out.println("El usuario ha alcanzado el límite de libros permitidos.");
                     }
                     break;
 
                 case "2":
+                    // Opción para devolver un libro
                     System.out.println("Has elegido: Devolver Libro.");
 
+                    // Variable para controlar el bucle del menú de devoluciones
                     boolean menuDevolucion = true;
 
-                    // Validar inicio de sesión de usuario
+                    // Bucle para el menú de devoluciones
                     while (menuDevolucion) {
                         System.out.println("\n--- Menú de Devoluciones ---");
                         System.out.println("1. Devolver un libro prestado.");
@@ -471,6 +537,7 @@ public class GestionBibliotecaMuskiz {
                         System.out.println("3. Regresar al menú anterior");
                         System.out.print("Seleccione una opción: ");
 
+                        // Leer la opción seleccionada
                         String opcionConsultar = scanner.nextLine().trim();
 
                         switch (opcionConsultar) {
@@ -478,14 +545,18 @@ public class GestionBibliotecaMuskiz {
                                 // Realizar devolución de un libro
                                 System.out.print("Introduce el ISBN del libro (13 dígitos): ");
                                 String isbnDevolver = scanner.nextLine().trim();
+                                // Validar el formato del ISBN
                                 if (isbnDevolver.isEmpty() || !isbnDevolver.matches("\\d{13}")) {
                                     System.out.println("El ISBN debe contener exactamente 13 dígitos numéricos.");
                                     continue;
                                 }
+                                // Obtener el código del libro a devolver
                                 int codLibroDevolver = obtenerCodLibroPorIsbn(isbnDevolver);
+                                // Verificar si se encontró el libro
                                 if (codLibroDevolver == -1) {
                                     System.out.println("No se encontró el libro con ISBN: " + codLibroDevolver);
                                 } else {
+                                    // Realizar la devolución del libro
                                     realizarDevolucion(connectMySQL(), codUsuario, codLibroDevolver);
                                 }
                                 break;
@@ -509,15 +580,17 @@ public class GestionBibliotecaMuskiz {
                     break;
 
                 case "3":
+                    // Opción para consultar los préstamos del usuario
                     System.out.println("Has elegido: Consultar tus Préstamos.");
                     consultarPrestamosUsuario(connectMySQL(), codUsuario);
                     break;
 
                 case "4":
+                    // Opción para consultar la disponibilidad de libros
                     System.out.println("Has elegido: Consultar Disponibilidad de Libros.");
                     boolean consultaDisponibilidad = true;
 
-                    // Validar inicio de sesión de usuario
+                    // Bucle para el menú de consulta de disponibilidad
                     while (consultaDisponibilidad) {
                         System.out.println("\n--- Menú de Consulta de Disponibilidad ---");
                         System.out.println("1. Consultar disponibilidad de todos los libros.");
@@ -526,14 +599,16 @@ public class GestionBibliotecaMuskiz {
                         System.out.println("4. Regresar al menú anterior.");
                         System.out.print("Seleccione una opción: ");
 
-                        String opcionConsultar = scanner.nextLine().trim();
+                        String opcionConsultar = scanner.nextLine().trim(); // Leer la opción seleccionada
 
                         switch (opcionConsultar) {
                             case "1":
+                                // Consultar disponibilidad de todos los libros
                                 consultarDisponibilidadLibros(connectMySQL());
                                 break;
 
                             case "2":
+                                // Consultar disponibilidad de un libro por ISBN
                                 System.out.print("Introduce el ISBN del libro (13 dígitos): ");
                                 String isbn = scanner.nextLine().trim();
                                 if (isbn.isEmpty() || !isbn.matches("\\d{13}")) {
@@ -544,6 +619,7 @@ public class GestionBibliotecaMuskiz {
                                 break;
 
                             case "3":
+                                // Consultar disponibilidad de un libro por título
                                 System.out.print("Introduce el titulo del libro: ");
                                 String titulo = scanner.nextLine().trim();
                                 if (titulo.isEmpty() || titulo.matches("\\d+")) {
@@ -559,6 +635,7 @@ public class GestionBibliotecaMuskiz {
                                 break;
 
                             default:
+                                // Opción no válida
                                 System.out.println("Opción no válida. Por favor, seleccione una opción válida.");
                                 break;
                         }
@@ -567,11 +644,13 @@ public class GestionBibliotecaMuskiz {
                     break;
 
                 case "5":
+                    // Opción para regresar al menú principal
                     System.out.println("\nVolviendo al menú principal...\n");
                     continuar = false; // Cambia la variable para salir del bucle
                     break;
 
                 default:
+                    // Opción no válida en el menú de préstamos
                     System.out.println("Opción no válida en el menú de préstamos. Intente nuevamente.\n");
             }
         }
@@ -582,6 +661,7 @@ public class GestionBibliotecaMuskiz {
     public static void mostrarMenuSocios(Scanner scanner) {
         boolean continuar = true; // Variable para controlar el bucle
 
+        // Bucle principal del menú de socios
         while (continuar) {
             System.out.println("\n--- Menú de Socios ---");
             System.out.println("1. Añadir socio.");
@@ -597,15 +677,18 @@ public class GestionBibliotecaMuskiz {
             // Evaluar opción
             switch (opcionUsuario) {
                 case "1":
+                    // Opción para añadir un nuevo socio
                     System.out.println("Has elegido: Añadir socio.");
                     agregarSocio(scanner);
                     break;
 
                 case "2":
+                    // Opción para borrar un socio
                     System.out.println("Has elegido: Borrar socio.");
                     String dniBaja = "";
                     boolean dniValido = false;
 
+                    // Bucle para validar el DNI del socio a eliminar
                     do {
                         System.out.print("Introduce el DNI del socio a eliminar: ");
                         dniBaja = scanner.nextLine().trim().toUpperCase();
@@ -626,6 +709,7 @@ public class GestionBibliotecaMuskiz {
                     break;
 
                 case "3":
+                    // Opción para modificar un socio
                     System.out.println("Has elegido: Modificar socio.");
                     // 1. Pedir y validar el DNI
                     String dniMod = validarDNI(scanner);
@@ -674,6 +758,7 @@ public class GestionBibliotecaMuskiz {
                     break;
 
                 case "4":
+                    // Opción para consultar un socio
                     System.out.println("Has elegido: Consultar socio.");
                     String opcionConsulta;
                     do {
@@ -708,11 +793,13 @@ public class GestionBibliotecaMuskiz {
                     break;
 
                 case "5":
+                    // Mostrar opciones de consulta
                     System.out.println("\nVolviendo al menú principal...\n");
                     continuar = false; // Cambia la variable para salir del bucle
                     break;
 
                 default:
+                    // Manejo de opción no válida
                     System.out.println("Opción no válida en el menú de socios. Intente nuevamente.\n");
                     break;
             }
