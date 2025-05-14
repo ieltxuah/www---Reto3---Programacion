@@ -1624,23 +1624,48 @@ public class GestionBibliotecaMuskiz {
 
     // Consultar disponibilidad de libros
     public static void consultarDisponibilidadLibros(Connection conn) {
-        String sql = "SELECT l.titulo, l.isbn, COUNT(e.cod_ejemplar) AS disponibles " +
+        String sqlTotalEjemplares = "SELECT l.titulo, l.isbn, COUNT(e.cod_ejemplar) AS total_ejemplares " +
                 "FROM libros l " +
                 "JOIN ejemplares e ON l.cod_libro = e.cod_libro " +
-                "LEFT JOIN prestamos p ON e.cod_ejemplar = p.cod_ejemplar AND p.fecha_devolucion IS NULL " +
-                "WHERE p.cod_prestamo IS NULL " +
                 "GROUP BY l.cod_libro";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            ResultSet rs = pstmt.executeQuery();
+
+        String sqlEjemplaresDisponibles = "SELECT l.titulo, COUNT(e.cod_ejemplar) AS ejemplares_no_disponibles " +
+                "FROM libros l " +
+                "JOIN ejemplares e ON l.cod_libro = e.cod_libro " +
+                "JOIN prestamos p ON e.cod_ejemplar = p.cod_ejemplar " +
+                "WHERE p.fecha_devolucion IS NULL ";
+
+        try (PreparedStatement pstmtTotal = conn.prepareStatement(sqlTotalEjemplares);
+                ResultSet rsTotal = pstmtTotal.executeQuery()) {
+
             System.out.println("Libros disponibles:");
             boolean hayResultados = false;
-            while (rs.next()) {
+
+            while (rsTotal.next()) {
                 hayResultados = true;
-                String titulo = rs.getString("titulo");
-                long isbn = rs.getLong("isbn");
-                int disponibles = rs.getInt("disponibles");
-                System.out.println("Título: " + titulo + ", ISBN: " + isbn + ", Disponibles: " + disponibles);
+                String titulo = rsTotal.getString("titulo");
+                long isbn = rsTotal.getLong("isbn");
+                int totalEjemplares = rsTotal.getInt("total_ejemplares");
+
+                // Ejecutar la consulta de ejemplares disponibles para cada libro
+                try (PreparedStatement pstmtDisponiblesPorLibro = conn
+                        .prepareStatement(sqlEjemplaresDisponibles + " AND l.titulo = ?")) {
+                    pstmtDisponiblesPorLibro.setString(1, titulo);
+                    ResultSet rsDisponibles = pstmtDisponiblesPorLibro.executeQuery();
+
+                    int noDisponibles = 0;
+                    if (rsDisponibles.next()) {
+                        noDisponibles = rsDisponibles.getInt("ejemplares_no_disponibles");
+                    }
+
+                    totalEjemplares -= noDisponibles;
+                    if (totalEjemplares > 0) {
+                        System.out
+                                .println("Título: " + titulo + ", ISBN: " + isbn + ", Disponibles: " + totalEjemplares);
+                    }
+                }
             }
+
             if (!hayResultados) {
                 System.out.println("No se encontraron libros disponibles.");
             }
@@ -1651,24 +1676,50 @@ public class GestionBibliotecaMuskiz {
 
     // Consultar disponibilidad de libros con filtro
     public static void consultarDisponibilidadLibrosFiltrado(Connection conn, String tipo, String valor) {
-        String sql = "SELECT l.titulo, l.isbn, COUNT(e.cod_ejemplar) AS disponibles " +
+        String sqlTotalEjemplares = "SELECT l.titulo, l.isbn, COUNT(e.cod_ejemplar) AS total_ejemplares " +
                 "FROM libros l " +
                 "JOIN ejemplares e ON l.cod_libro = e.cod_libro " +
-                "LEFT JOIN prestamos p ON e.cod_ejemplar = p.cod_ejemplar AND p.fecha_devolucion IS NULL " +
-                "WHERE l." + tipo + " = ? AND p.cod_prestamo IS NULL " +
+                "WHERE l." + tipo + " = ? " +
                 "GROUP BY l.cod_libro";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, valor);
-            ResultSet rs = pstmt.executeQuery();
+
+        String sqlEjemplaresNoDisponibles = "SELECT COUNT(e.cod_ejemplar) AS ejemplares_no_disponibles " +
+                "FROM ejemplares e " +
+                "JOIN prestamos p ON e.cod_ejemplar = p.cod_ejemplar " +
+                "JOIN libros l ON e.cod_libro = l.cod_libro " +
+                "WHERE p.fecha_devolucion IS NULL AND l." + tipo + " = ?";
+
+        try (PreparedStatement pstmtTotal = conn.prepareStatement(sqlTotalEjemplares)) {
+            pstmtTotal.setString(1, valor);
+            ResultSet rsTotal = pstmtTotal.executeQuery();
+
             System.out.println("Libros disponibles:");
             boolean hayResultados = false;
-            while (rs.next()) {
+
+            while (rsTotal.next()) {
                 hayResultados = true;
-                String titulo = rs.getString("titulo");
-                long isbn = rs.getLong("isbn");
-                int disponibles = rs.getInt("disponibles");
-                System.out.println("Título: " + titulo + ", ISBN: " + isbn + ", Disponibles: " + disponibles);
+                String titulo = rsTotal.getString("titulo");
+                long isbn = rsTotal.getLong("isbn");
+                int totalEjemplares = rsTotal.getInt("total_ejemplares");
+
+                // Ejecutar la consulta de ejemplares no disponibles para cada libro
+                try (PreparedStatement pstmtNoDisponibles = conn.prepareStatement(sqlEjemplaresNoDisponibles)) {
+                    pstmtNoDisponibles.setString(1, valor); // Usar el valor del tipo
+                    ResultSet rsNoDisponibles = pstmtNoDisponibles.executeQuery();
+
+                    int noDisponibles = 0;
+                    if (rsNoDisponibles.next()) {
+                        noDisponibles = rsNoDisponibles.getInt("ejemplares_no_disponibles");
+                    }
+
+                    int disponibles = totalEjemplares - noDisponibles;
+                    if (disponibles > 0) {
+                        System.out.println("Título: " + titulo + ", ISBN: " + isbn + ", Disponibles: " + disponibles);
+                    } else {
+                        hayResultados = false;
+                    }
+                }
             }
+
             if (!hayResultados) {
                 System.out.println("No se encontraron libros disponibles con el " + tipo + " proporcionado.");
             }
