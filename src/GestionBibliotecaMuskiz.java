@@ -1586,7 +1586,6 @@ public class GestionBibliotecaMuskiz {
             System.out.println("Error de conexión o SQL:");
             e.printStackTrace();
         }
-
     }
 
     // Devolver libro
