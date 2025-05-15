@@ -1560,10 +1560,11 @@ public class GestionBibliotecaMuskiz {
             }
 
             // Verificar si el usuario ya tiene un préstamo activo para el mismo libro
-            String queryPrestamo = "SELECT COUNT(*) FROM prestamos WHERE cod_usuario = ? AND cod_ejemplar = ? AND fecha_devolucion IS NULL";
+            String queryPrestamo = "SELECT COUNT(*) FROM prestamos p JOIN ejemplares e ON p.cod_ejemplar = e.cod_ejemplar "
+                    + "WHERE p.cod_usuario = ? AND e.cod_libro = ? AND p.fecha_devolucion IS NULL";
             try (PreparedStatement stmt = conn.prepareStatement(queryPrestamo)) {
                 stmt.setInt(1, codUsuario);
-                stmt.setInt(2, codEjemplar);
+                stmt.setInt(2, codLibro);
                 ResultSet rs = stmt.executeQuery();
                 if (rs.next() && rs.getInt(1) > 0) {
                     System.out.println("El usuario ya tiene un préstamo activo para este libro.");
