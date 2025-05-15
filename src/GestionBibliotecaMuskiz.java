@@ -313,8 +313,7 @@ public class GestionBibliotecaMuskiz {
                 case "3":
                     // Opción para modificar un autor existente
                     System.out.println("Has elegido: Modificaciones.");
-
-                    System.out.print("Introduce el código del autor a modificar2: ");
+                    System.out.print("Introduce el código del autor a modificar: ");
                     String codAutorModificar = scanner.nextLine().trim(); // Leer el código del autor a modificar
                     // Validar que el código no esté vacío y sea numérico
                     if (codAutorModificar.isEmpty()) {
