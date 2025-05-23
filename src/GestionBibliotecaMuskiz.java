@@ -1444,36 +1444,51 @@ public class GestionBibliotecaMuskiz {
     }
 
     // Bajas socio
-    public static void borrarSocioPorDNI(Connection conn, String dni) {
-        try {
-            // Verificar si existe un socio con ese DNI
-            String checkSql = "SELECT COUNT(*) FROM usuarios WHERE dni = ?";
-            try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                checkStmt.setString(1, dni);
-                ResultSet rs = checkStmt.executeQuery();
-                if (rs.next() && rs.getInt(1) == 0) {
-                    System.out.println("No se encontró ningún socio con ese DNI.");
-                    return;
-                }
+public static void borrarSocioPorDNI(Connection conn, String dni) {
+    try {
+        // Verificar si existe un socio con ese DNI y obtener su cod_usuario
+        String getUserSql = "SELECT cod_usuario FROM usuarios WHERE dni = ?";
+        int codUsuario = -1;
+        try (PreparedStatement getUserStmt = conn.prepareStatement(getUserSql)) {
+            getUserStmt.setString(1, dni);
+            ResultSet rs = getUserStmt.executeQuery();
+            if (rs.next()) {
+                codUsuario = rs.getInt("cod_usuario");
+            } else {
+                System.out.println("No se encontró ningún socio con ese DNI.");
+                return;
             }
-
-            // Eliminar socio
-            String deleteSql = "DELETE FROM usuarios WHERE dni = ?";
-            try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
-                deleteStmt.setString(1, dni);
-                int filasAfectadas = deleteStmt.executeUpdate();
-                if (filasAfectadas > 0) {
-                    System.out.println("Socio eliminado correctamente.");
-                } else {
-                    System.out.println("No se pudo eliminar el socio.");
-                }
-            }
-
-        } catch (SQLException e) {
-            System.out.println("Error al eliminar el socio:");
-            e.printStackTrace();
         }
+
+        // Verificar si el socio tiene préstamos no devueltos
+        String prestamosSql = "SELECT COUNT(*) FROM prestamos WHERE cod_usuario = ? AND fecha_devolucion IS NULL";
+        try (PreparedStatement prestamosStmt = conn.prepareStatement(prestamosSql)) {
+            prestamosStmt.setInt(1, codUsuario);
+            ResultSet rsPrestamos = prestamosStmt.executeQuery();
+            if (rsPrestamos.next() && rsPrestamos.getInt(1) > 0) {
+                System.out.println("No se puede eliminar el socio porque tiene préstamos sin devolver.");
+                return;
+            }
+        }
+
+        // Eliminar socio
+        String deleteSql = "DELETE FROM usuarios WHERE dni = ?";
+        try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+            deleteStmt.setString(1, dni);
+            int filasAfectadas = deleteStmt.executeUpdate();
+            if (filasAfectadas > 0) {
+                System.out.println("Socio eliminado correctamente.");
+            } else {
+                System.out.println("No se pudo eliminar el socio.");
+            }
+        }
+
+    } catch (SQLException e) {
+        System.out.println("Error al eliminar el socio:");
+        e.printStackTrace();
     }
+}
+
 
     // Consultar socios
     public static void consultarSocios(Connection conn) {
